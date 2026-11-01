@@ -8,7 +8,7 @@ from .code_analyzer import CodeAnalyzer
 from .git_miner import GitMiner
 from .model_predictor import predictor
 from .solution_generator import SolutionGenerator
-from ..models.schemas import FileMetric, ProjectHealthSummary, ModelBenchmarkItem
+from ..models.schemas import FileMetric, ProjectHealthSummary, ModelBenchmarkItem, GitCommitItem
 
 class FeatureBuilder:
     """Orchestrates static analysis, git mining, and ML risk prediction across software projects."""
@@ -20,6 +20,7 @@ class FeatureBuilder:
         temp_dir = tempfile.mkdtemp(prefix="refactai_")
         is_simulated = False
         files_data: List[FileMetric] = []
+        commit_logs: List[Dict[str, Any]] = []
 
         try:
             # Check if repo_url is a local path
@@ -33,11 +34,12 @@ class FeatureBuilder:
                 if use_sample_if_fail:
                     is_simulated = True
                     files_data = cls._generate_realistic_benchmark_files(repo_name, model_type)
+                    commit_logs = cls._generate_sample_git_history(repo_name)
                 else:
                     raise ValueError(f"Could not clone or locate repository at '{repo_url}'.")
             else:
                 # 1. Mine Git commit history
-                git_stats = GitMiner.mine_git_history(target_path)
+                git_stats, commit_logs = GitMiner.mine_git_history(target_path)
 
                 # 2. Walk filesystem and analyze source code files
                 count = 0
@@ -100,11 +102,13 @@ class FeatureBuilder:
                 if not files_data and use_sample_if_fail:
                     is_simulated = True
                     files_data = cls._generate_realistic_benchmark_files(repo_name, model_type)
+                    if not commit_logs:
+                        commit_logs = cls._generate_sample_git_history(repo_name)
 
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-        return cls._compile_summary(repo_name, repo_url, branch, files_data, model_type, is_simulated)
+        return cls._compile_summary(repo_name, repo_url, branch, files_data, model_type, is_simulated, commit_logs)
 
     @classmethod
     def _generate_realistic_benchmark_files(cls, repo_name: str, model_type: str) -> List[FileMetric]:
@@ -274,7 +278,53 @@ class FeatureBuilder:
         return files_data
 
     @classmethod
-    def _compile_summary(cls, repo_name: str, repo_url: str, branch: str, files_data: List[FileMetric], model_type: str, is_simulated: bool) -> ProjectHealthSummary:
+    def _generate_sample_git_history(cls, repo_name: str) -> List[Dict[str, Any]]:
+        """Generates realistic Git commit logs for benchmark runs."""
+        return [
+            {
+                "commit_hash": "a1f8c32d",
+                "author": "Sarah Jenkins",
+                "commit_date": "2026-10-31 16:42",
+                "commit_message": "fix(payment): hotfix race condition in concurrent webhook dispatch",
+                "code_churn": 142,
+                "is_bug_fix": True
+            },
+            {
+                "commit_hash": "e94b210c",
+                "author": "David Miller",
+                "commit_date": "2026-10-29 11:15",
+                "commit_message": "refactor(auth): isolate JWT claims validation into TokenVerifier service",
+                "code_churn": 85,
+                "is_bug_fix": False
+            },
+            {
+                "commit_hash": "c882d91f",
+                "author": "Elena Rostova",
+                "commit_date": "2026-10-26 09:30",
+                "commit_message": "fix(parser): resolve null pointer in legacy XML tag extractor",
+                "code_churn": 64,
+                "is_bug_fix": True
+            },
+            {
+                "commit_hash": "77bc128a",
+                "author": "Michael Chang",
+                "commit_date": "2026-10-22 14:05",
+                "commit_message": "feat(orders): add idempotency key check to order transaction pipeline",
+                "code_churn": 190,
+                "is_bug_fix": False
+            },
+            {
+                "commit_hash": "33fd4011",
+                "author": "Sarah Jenkins",
+                "commit_date": "2026-10-18 18:22",
+                "commit_message": "fix(db): patch unindexed scan on transaction lookup queries",
+                "code_churn": 45,
+                "is_bug_fix": True
+            }
+        ]
+
+    @classmethod
+    def _compile_summary(cls, repo_name: str, repo_url: str, branch: str, files_data: List[FileMetric], model_type: str, is_simulated: bool, commit_logs: List[Dict[str, Any]] = None) -> ProjectHealthSummary:
         total_files = len(files_data)
         if total_files == 0:
             avg_risk = 0.0
@@ -328,6 +378,17 @@ class FeatureBuilder:
             "Refactor high-churn files with multiple authors into smaller, decoupled single-responsibility modules."
         ]
 
+        formatted_git_history = []
+        for c in (commit_logs or []):
+            formatted_git_history.append(GitCommitItem(
+                commit_hash=c.get("commit_hash", ""),
+                author=c.get("author", "Unknown"),
+                commit_date=c.get("commit_date", ""),
+                commit_message=c.get("commit_message", ""),
+                code_churn=c.get("code_churn", 0),
+                is_bug_fix=c.get("is_bug_fix", False)
+            ))
+
         return ProjectHealthSummary(
             repo_name=repo_name,
             repo_url=repo_url,
@@ -346,5 +407,6 @@ class FeatureBuilder:
             files=files_data,
             model_benchmarks=benchmarks,
             top_risk_drivers=top_drivers,
-            global_recommendations=global_recs
+            global_recommendations=global_recs,
+            git_history=formatted_git_history
         )

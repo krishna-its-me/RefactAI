@@ -1,5 +1,19 @@
 [
   {
+    "id": "f771ad9c-0950-4558-9f93-822130c8d79c",
+    "user_id": "user_test_uuid_123",
+    "repo_name": "test-repo",
+    "repo_url": "https://github.com/zpqrtbnk/test-repo.git",
+    "branch": "master",
+    "overall_debt_score": 1.1,
+    "health_status": "Healthy / Low Debt Burden",
+    "total_files": 1,
+    "critical_risk_files": 0,
+    "avg_complexity": 1.0,
+    "active_model": "random_forest",
+    "analyzed_at": "2026-11-01 15:21:48"
+  },
+  {
     "id": "f8a7e226-44ba-4b9e-a05a-fa74e09f68c6",
     "repo_name": "bugzilla",
     "repo_url": "https://github.com/bugzilla/bugzilla.git",

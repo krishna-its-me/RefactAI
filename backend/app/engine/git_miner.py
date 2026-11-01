@@ -32,19 +32,39 @@ class GitMiner:
             return False
 
     @classmethod
-    def mine_git_history(cls, repo_path: str) -> Dict[str, Dict[str, Any]]:
-        """Mines commit history for each file in the repository."""
+    def mine_git_history(cls, repo_path: str) -> tuple[Dict[str, Dict[str, Any]], List[Dict[str, Any]]]:
+        """Mines commit history for each file in the repository and returns per-file process metrics and recent commit logs."""
         file_metrics: Dict[str, Dict[str, Any]] = {}
+        commit_logs: List[Dict[str, Any]] = []
+
         try:
             import git
             repo = git.Repo(repo_path)
             commits = list(repo.iter_commits(max_count=100))
 
-            for commit in commits:
+            for idx, commit in enumerate(commits):
                 try:
                     is_bug_fix = bool(cls.BUG_KEYWORDS.search(commit.message))
-                    author = commit.author.email or commit.author.name
+                    author = commit.author.name or commit.author.email or "Unknown"
                     stats_files = commit.stats.files
+                    
+                    # Record recent commit logs (up to 30)
+                    if idx < 30:
+                        churn_commit = sum(f.get("insertions", 0) + f.get("deletions", 0) for f in stats_files.values())
+                        date_str = ""
+                        try:
+                            date_str = commit.committed_datetime.strftime("%Y-%m-%d %H:%M")
+                        except Exception:
+                            date_str = ""
+
+                        commit_logs.append({
+                            "commit_hash": commit.hexsha[:8],
+                            "author": author,
+                            "commit_date": date_str,
+                            "commit_message": commit.message.split("\n")[0].strip()[:180],
+                            "code_churn": churn_commit,
+                            "is_bug_fix": is_bug_fix
+                        })
                 except Exception:
                     continue
 
@@ -74,7 +94,7 @@ class GitMiner:
                     "authors_count": max(1, len(data["authors"])),
                     "bug_fixes_count": data["bug_fixes_count"]
                 }
-            return result
+            return result, commit_logs
         except Exception as e:
             print(f"[GitMiner] Git mining error: {e}")
-            return {}
+            return {}, []

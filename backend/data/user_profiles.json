@@ -1,0 +1,11 @@
+[
+  {
+    "id": "user_test_uuid_123",
+    "email": "krishna@refactai.io",
+    "phone": "+15551234567",
+    "display_name": "Krishna",
+    "avatar_url": "",
+    "auth_provider": "google",
+    "last_sign_in": "2026-11-01T09:51:26.232264"
+  }
+]

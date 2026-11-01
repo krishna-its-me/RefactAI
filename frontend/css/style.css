@@ -2563,3 +2563,265 @@ body {
     color: #ffffff;
     border-color: #3f3f46;
 }
+
+/* ==========================================================================
+   Supabase Authentication UI & User Header Profile
+   ========================================================================== */
+.header-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+}
+
+.header-auth-group {
+    display: flex;
+    align-items: center;
+}
+
+.btn-auth-signin {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #18181b;
+    border: 1px solid #2e2e38;
+    color: #ffffff;
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-auth-signin:hover {
+    background: #24242d;
+    border-color: #0019FF;
+    color: #00D2FF;
+}
+
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(0, 25, 255, 0.08);
+    border: 1px solid rgba(0, 25, 255, 0.35);
+    padding: 0.25rem 0.6rem 0.25rem 0.35rem;
+    border-radius: 9999px;
+}
+
+.user-avatar-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #0019FF;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    overflow: hidden;
+}
+.user-avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-badge-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #ffffff;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-signout {
+    background: transparent;
+    border: none;
+    color: #71717a;
+    cursor: pointer;
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: color 0.15s;
+    margin-left: 0.25rem;
+}
+.btn-signout:hover {
+    color: #ef4444;
+}
+
+.auth-modal-card {
+    max-width: 480px;
+}
+
+.auth-tabs {
+    display: flex;
+    border-bottom: 1px solid #222228;
+    background: #0c0c0e;
+}
+
+.auth-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.85rem 1rem;
+    color: #8e8e8e;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.auth-tab-btn.active {
+    color: #ffffff;
+    border-bottom-color: #0019FF;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.auth-panel {
+    padding: 1.5rem 1.75rem;
+}
+
+.google-auth-box {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.auth-intro-p {
+    font-size: 0.85rem;
+    color: #a1a1aa;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.btn-google-action {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: #ffffff;
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.btn-google-action:hover {
+    background: #f3f4f6;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.phone-auth-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.field-hint {
+    font-size: 0.75rem;
+    color: #71717a;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.otp-input {
+    letter-spacing: 0.3em;
+    font-size: 1.2rem;
+    text-align: center;
+    font-weight: 700;
+}
+
+.auth-footer-status {
+    padding: 0 1.75rem 1.25rem;
+}
+
+/* ==========================================================================
+   Git Evolution History UI
+   ========================================================================== */
+.git-history-container {
+    padding: 0.5rem 0;
+}
+
+.git-history-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.git-history-title-block h3 {
+    font-size: 1.15rem;
+    color: #ffffff;
+    margin: 0.4rem 0 0.25rem;
+}
+
+.git-history-title-block p {
+    font-size: 0.85rem;
+    color: #8e8e8e;
+    margin: 0;
+}
+
+.git-history-stats-pills {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.git-stat-pill {
+    background: #18181b;
+    border: 1px solid #27272a;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: #a1a1aa;
+}
+.git-stat-pill strong {
+    color: #00D2FF;
+    margin-right: 0.25rem;
+}
+
+.commit-hash-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: #1a1a24;
+    color: #00D2FF;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 210, 255, 0.25);
+    display: inline-block;
+}
+
+.badge-bug-repair {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-feature-commit {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}

@@ -9,7 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=2.6">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.7">
+    <!-- Supabase JS Client for Cloud Authentication (Google OAuth + Phone OTP) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- jsPDF and AutoTable for Client-Side Authorized PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -44,9 +46,29 @@
                 <a href="/docs" target="_blank" class="nav-link">API Docs &nearr;</a>
             </nav>
 
-            <div class="header-status">
-                <span class="status-indicator-dot"></span>
-                <span id="system-status-text" class="status-text">Engine Ready</span>
+            <div class="header-right-actions">
+                <div class="header-status">
+                    <span class="status-indicator-dot"></span>
+                    <span id="system-status-text" class="status-text">Engine Ready</span>
+                </div>
+
+                <div class="header-auth-group">
+                    <!-- Logged Out State -->
+                    <button type="button" id="header-auth-btn" class="btn-auth-signin">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>Sign In</span>
+                    </button>
+                    <!-- Logged In State (Hidden by default) -->
+                    <div id="user-profile-badge" class="user-badge hidden">
+                        <div class="user-avatar-circle" id="user-avatar-circle">
+                            <span id="user-avatar-initials">U</span>
+                        </div>
+                        <span id="user-display-name" class="user-badge-name">User</span>
+                        <button type="button" id="btn-sign-out" class="btn-signout" title="Sign Out">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -360,6 +382,16 @@
                                 <rect x="3" y="14" width="7" height="7"></rect>
                             </svg>
                             Hotspot Matrix
+                        </button>
+                        <button class="segmented-item tab-btn" data-tab="tab-githistory">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="18" r="3"></circle>
+                                <circle cx="6" cy="6" r="3"></circle>
+                                <circle cx="18" cy="6" r="3"></circle>
+                                <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"></path>
+                                <path d="M12 12v3"></path>
+                            </svg>
+                            Git History &amp; Logs
                         </button>
                         <button class="segmented-item tab-btn" data-tab="tab-benchmarks">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -681,6 +713,44 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Tab 5: Git Evolution History & Commits (Supabase-backed) -->
+                <div id="tab-githistory" class="tab-pane">
+                    <div class="git-history-container">
+                        <div class="git-history-header-bar">
+                            <div class="git-history-title-block">
+                                <div class="modal-supa-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                                    <span>Supabase git_history_logs Sync</span>
+                                </div>
+                                <h3>Mined Git Commit History &amp; Temporal Churn</h3>
+                                <p>Examines recent commit records, author distributions, and bug repair patches mined directly from the repository git log.</p>
+                            </div>
+                            <div class="git-history-stats-pills">
+                                <span class="git-stat-pill"><strong id="git-total-commits">0</strong> Commits Mined</span>
+                                <span class="git-stat-pill"><strong id="git-bug-fixes-count">0</strong> Bug Repairs</span>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table" id="git-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Commit</th>
+                                        <th>Author</th>
+                                        <th>Date</th>
+                                        <th>Commit Message</th>
+                                        <th>Code Churn</th>
+                                        <th>Classification</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="git-history-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -841,6 +911,97 @@
         </div>
     </div>
 
+    <!-- Supabase Authentication Modal (Google OAuth & Phone OTP) -->
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div class="modal-card auth-modal-card">
+            <div class="modal-header">
+                <div class="modal-header-info">
+                    <div class="modal-supa-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Supabase Auth Cloud</span>
+                    </div>
+                    <h3 class="modal-title">Sign In to RefactAI</h3>
+                    <p class="modal-desc">Access your repository audit history, saved Git analytics, and automated refactoring solutions.</p>
+                </div>
+                <button type="button" id="close-auth-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+
+            <!-- Auth Method Switcher -->
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab-btn active" data-auth="google">
+                    <svg width="15" height="15" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    Google Account
+                </button>
+                <button type="button" class="auth-tab-btn" data-auth="phone">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    Phone OTP
+                </button>
+            </div>
+
+            <!-- Tab 1: Google OAuth Panel -->
+            <div id="auth-panel-google" class="auth-panel">
+                <div class="google-auth-box">
+                    <p class="auth-intro-p">Sign in securely with your Google Workspace or personal Gmail. Audits and Git history will be automatically tied to your account in Supabase.</p>
+                    <button type="button" id="btn-google-signin" class="btn-google-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span id="google-btn-text">Continue with Google</span>
+                        <span class="btn-spinner hidden" id="google-spinner"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 2: Phone OTP Panel -->
+            <div id="auth-panel-phone" class="auth-panel hidden">
+                <div class="phone-auth-container">
+                    <!-- Step 1: Input Phone -->
+                    <div id="phone-step-1">
+                        <div class="form-group">
+                            <label for="auth-phone-input" class="form-label">Phone Number (with country code) *</label>
+                            <input type="tel" id="auth-phone-input" class="form-input" placeholder="+1 555 123 4567 or +91 98765 43210" required>
+                            <span class="field-hint">Include country code (e.g. +1 for US/CA, +91 for India, +44 for UK).</span>
+                        </div>
+                        <button type="button" id="btn-send-otp" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.75rem;">
+                            <span class="btn-text">Send Verification SMS</span>
+                            <span class="btn-spinner hidden" id="otp-send-spinner"></span>
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Input OTP -->
+                    <div id="phone-step-2" class="hidden">
+                        <div class="form-group">
+                            <label for="auth-otp-input" class="form-label">6-Digit Verification Code *</label>
+                            <input type="text" id="auth-otp-input" class="form-input otp-input" placeholder="123456" maxlength="6">
+                            <span class="field-hint" id="otp-sent-to-label">Code sent to your phone.</span>
+                        </div>
+                        <div class="btn-row-flex" style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                            <button type="button" id="btn-back-phone" class="btn-ghost">Back</button>
+                            <button type="button" id="btn-verify-otp" class="btn-primary" style="flex: 1; justify-content: center;">
+                                <span class="btn-text">Verify &amp; Sign In</span>
+                                <span class="btn-spinner hidden" id="otp-verify-spinner"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-footer-status">
+                <div id="auth-status-msg" class="form-status-msg"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Unique RefactAi Minimalist Footer -->
     <footer class="app-footer-unique">
         <div class="footer-unique-container">
@@ -870,6 +1031,6 @@
     </footer>
 
     <!-- Application Script -->
-    <script src="/static/js/app.js?v=2.6"></script>
+    <script src="/static/js/app.js?v=2.7"></script>
 </body>
 </html>

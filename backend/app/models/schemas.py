@@ -7,6 +7,16 @@ class AnalyzeRepoRequest(BaseModel):
     max_files: Optional[int] = Field(150, description="Max files to analyze")
     model_type: Optional[str] = Field("random_forest", description="ML model to employ: logistic_regression, decision_tree, random_forest, or xgboost")
     use_sample_if_fail: Optional[bool] = Field(True, description="Fallback gracefully to simulated analysis if GitHub rate limited or invalid URL")
+    user_id: Optional[str] = Field(None, description="Supabase authenticated User ID")
+    user_email: Optional[str] = Field(None, description="Supabase authenticated user email or phone")
+
+class GitCommitItem(BaseModel):
+    commit_hash: str
+    author: str
+    commit_date: str
+    commit_message: str
+    code_churn: int = 0
+    is_bug_fix: bool = False
 
 class ShapFactor(BaseModel):
     feature_name: str
@@ -71,6 +81,7 @@ class ProjectHealthSummary(BaseModel):
     model_benchmarks: List[ModelBenchmarkItem]
     top_risk_drivers: List[str]
     global_recommendations: List[str]
+    git_history: List[GitCommitItem] = []
 
 class InquirySubmission(BaseModel):
     name: str = Field(..., min_length=2, max_length=100, description="Full name of contact")
@@ -79,3 +90,12 @@ class InquirySubmission(BaseModel):
     inquiry_type: Optional[str] = Field("Enterprise Debt Audit", max_length=80, description="Category of service or inquiry")
     repo_url: Optional[str] = Field(None, max_length=255, description="Repository URL for analysis request")
     message: str = Field(..., min_length=5, max_length=2000, description="Detailed inquiry message or requirements")
+    user_id: Optional[str] = Field(None, description="Supabase User UUID if logged in")
+
+class UserProfileSync(BaseModel):
+    id: str = Field(..., description="Supabase Auth UUID")
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    auth_provider: Optional[str] = "google"

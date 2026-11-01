@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from ..models.schemas import AnalyzeRepoRequest, ProjectHealthSummary, InquirySubmission
+from ..models.schemas import AnalyzeRepoRequest, ProjectHealthSummary, InquirySubmission, UserProfileSync
 from ..engine.feature_builder import FeatureBuilder
 from ..engine.model_predictor import predictor
 from ..engine.solution_generator import SolutionGenerator
@@ -17,6 +17,34 @@ def get_system_health():
         "supabase_connected": bool(url and key),
         "available_models": list(predictor.models.keys())
     }
+
+@router.get("/auth/config")
+def get_auth_config():
+    """Returns Supabase connection configuration for frontend authentication."""
+    url, key = SupabaseService.get_credentials()
+    return {
+        "supabase_url": url,
+        "supabase_anon_key": key,
+        "is_configured": bool(url and key),
+        "auth_providers": ["google", "phone"]
+    }
+
+@router.post("/auth/profile")
+def sync_user_profile(profile: UserProfileSync):
+    """Synchronizes Google OAuth or Phone Number authenticated users with Supabase and local backup."""
+    try:
+        res = SupabaseService.sync_user_profile(profile.dict())
+        return {"status": "success", "data": res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/user/history")
+def get_user_history(user_id: str = Query(..., description="Supabase Auth User ID")):
+    """Retrieves previous repository analyses and mined Git history for the authenticated user."""
+    try:
+        return SupabaseService.get_user_history(user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/models")
 def get_model_benchmarks():
@@ -44,7 +72,7 @@ def get_sample_analysis(model_type: str = "random_forest"):
 
 @router.post("/analyze", response_model=ProjectHealthSummary)
 def analyze_repository(request: AnalyzeRepoRequest):
-    """Analyzes a GitHub repository or local workspace for Technical Debt analysis with SHAP explanations."""
+    """Analyzes a GitHub repository or local workspace for Technical Debt analysis with SHAP explanations and Git history."""
     try:
         summary = FeatureBuilder.analyze_repository(
             repo_url=request.repo_url,
@@ -53,9 +81,9 @@ def analyze_repository(request: AnalyzeRepoRequest):
             model_type=request.model_type or "random_forest",
             use_sample_if_fail=request.use_sample_if_fail
         )
-        # Record inquiry/analysis run to Supabase
+        # Record repository analysis & mined git history under user_id to Supabase
         try:
-            SupabaseService.record_analysis_request(summary.dict())
+            SupabaseService.record_analysis_request(summary.dict(), user_id=request.user_id)
         except Exception as ex:
             print(f"[Routes] Supabase logging warning: {ex}")
             
@@ -98,6 +126,13 @@ def generate_fix_solution(data: dict):
     problem_summary, before_code, solution_code = SolutionGenerator.get_solution(
         file_path, language, complexity, loc, recs
     )
+    return {
+        "file_path": file_path,
+        "language": language,
+        "problem_summary": problem_summary,
+        "before_code": before_code,
+        "solution_code": solution_code
+    }
     return {
         "file_path": file_path,
         "language": language,
