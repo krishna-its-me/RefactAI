@@ -1,0 +1,12 @@
+[
+  {
+    "id": "edc135f3-0f75-4daa-94fd-4ed8df960441",
+    "name": "Alex Chen",
+    "email": "alex@enterprise.io",
+    "organization": "Chen Tech",
+    "inquiry_type": "Enterprise Debt Audit",
+    "repo_url": "https://github.com/zpqrtbnk/test-repo.git",
+    "message": "We need automated technical debt audits.",
+    "created_at": "2026-11-01T07:51:21.330789"
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "f8a7e226-44ba-4b9e-a05a-fa74e09f68c6",
+    "repo_name": "bugzilla",
+    "repo_url": "https://github.com/bugzilla/bugzilla.git",
+    "branch": "main",
+    "overall_debt_score": 19.3,
+    "health_status": "Healthy / Low Debt Burden",
+    "total_files": 50,
+    "critical_risk_files": 0,
+    "avg_complexity": 43.6,
+    "analyzed_at": "2026-11-01 14:48:20"
+  },
+  {
+    "id": "042e052c-f420-48d2-9b02-8a0cd2a68afa",
+    "repo_name": "microservices-architecture-suite",
+    "repo_url": "https://github.com/refactai/microservices-architecture-suite",
+    "branch": "main",
+    "overall_debt_score": 34.9,
+    "health_status": "Healthy / Low Debt Burden",
+    "total_files": 10,
+    "critical_risk_files": 2,
+    "avg_complexity": 14.9,
+    "analyzed_at": "2026-11-01 14:46:43"
+  },
+  {
+    "id": "644d519f-efb4-4fbc-af8d-71df053a1004",
+    "repo_name": "microservices-architecture-suite",
+    "repo_url": "https://github.com/refactai/microservices-architecture-suite",
+    "branch": "main",
+    "overall_debt_score": 34.9,
+    "health_status": "Healthy / Low Debt Burden",
+    "total_files": 10,
+    "critical_risk_files": 2,
+    "avg_complexity": 14.9,
+    "analyzed_at": "2026-11-01 14:46:42"
+  },
+  {
+    "id": "ec5e8229-7a16-4ac0-9be1-8a5de7948e54",
+    "repo_name": "test-repo",
+    "repo_url": "https://github.com/zpqrtbnk/test-repo.git",
+    "branch": "master",
+    "overall_debt_score": 1.1,
+    "health_status": "Healthy / Low Debt Burden",
+    "total_files": 1,
+    "critical_risk_files": 0,
+    "avg_complexity": 1.0,
+    "analyzed_at": "2026-11-01 14:46:01"
+  }
+]
