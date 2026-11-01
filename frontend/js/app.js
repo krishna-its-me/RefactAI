@@ -158,6 +158,74 @@ document.addEventListener("DOMContentLoaded", () => {
         // Form submit
         elements.analyzeForm.addEventListener("submit", handleFormSubmit);
 
+        // Clipboard Paste Button
+        const btnPasteClipboard = document.getElementById("btn-paste-clipboard");
+        const btnClearRepo = document.getElementById("btn-clear-repo");
+        const toggleAuthTokenBtn = document.getElementById("toggle-auth-token-btn");
+        const authTokenFields = document.getElementById("auth-token-fields");
+        const btnIngestionAuth = document.getElementById("btn-ingestion-auth");
+
+        if (btnPasteClipboard) {
+            btnPasteClipboard.addEventListener("click", async () => {
+                try {
+                    const text = await navigator.clipboard.readText();
+                    if (text && text.trim()) {
+                        elements.repoUrlInput.value = text.trim();
+                        if (btnClearRepo) btnClearRepo.classList.remove("hidden");
+                        elements.repoUrlInput.focus();
+                        showToast("Pasted repository URL from clipboard!");
+                    } else {
+                        showToast("Clipboard is empty. Please copy a repository URL first.");
+                    }
+                } catch (err) {
+                    elements.repoUrlInput.focus();
+                    showToast("Please press Ctrl+V to paste your repository URL.");
+                }
+            });
+        }
+
+        if (btnClearRepo) {
+            btnClearRepo.addEventListener("click", () => {
+                elements.repoUrlInput.value = "";
+                btnClearRepo.classList.add("hidden");
+                elements.repoUrlInput.focus();
+            });
+        }
+
+        if (elements.repoUrlInput) {
+            elements.repoUrlInput.addEventListener("input", () => {
+                if (btnClearRepo) {
+                    if (elements.repoUrlInput.value.trim()) {
+                        btnClearRepo.classList.remove("hidden");
+                    } else {
+                        btnClearRepo.classList.add("hidden");
+                    }
+                }
+            });
+        }
+
+        if (toggleAuthTokenBtn && authTokenFields) {
+            toggleAuthTokenBtn.addEventListener("click", () => {
+                authTokenFields.classList.toggle("hidden");
+                const isHidden = authTokenFields.classList.contains("hidden");
+                const label = document.getElementById("token-toggle-label");
+                if (label) {
+                    label.textContent = isHidden 
+                        ? "+ Add GitHub Auth Token (PAT for private repos / high rate limits)"
+                        : "- Hide GitHub Auth Token Field";
+                }
+                if (!isHidden) {
+                    document.getElementById("github-token-input")?.focus();
+                }
+            });
+        }
+
+        if (btnIngestionAuth) {
+            btnIngestionAuth.addEventListener("click", () => {
+                openAuthModal();
+            });
+        }
+
         // Preset buttons
         elements.presetBtns.forEach(btn => {
             btn.addEventListener("click", () => {
@@ -476,7 +544,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     max_files: 50,
                     use_sample_if_fail: true,
                     user_id: currentSupabaseUser ? currentSupabaseUser.id : null,
-                    user_email: currentSupabaseUser ? (currentSupabaseUser.email || currentSupabaseUser.phone) : null
+                    user_email: currentSupabaseUser ? (currentSupabaseUser.email || currentSupabaseUser.phone) : null,
+                    github_token: document.getElementById("github-token-input")?.value.trim() || null
                 })
             });
 
@@ -1798,12 +1867,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateUserUI(user) {
+        const ingestionAuthLabel = document.getElementById("ingestion-auth-label");
         if (user) {
             if (headerAuthBtn) headerAuthBtn.classList.add("hidden");
             if (userProfileBadge) userProfileBadge.classList.remove("hidden");
 
             const name = user.user_metadata?.full_name || user.user_metadata?.name || user.display_name || user.email || user.phone || "RefactAI User";
             if (userDisplayName) userDisplayName.textContent = name;
+            if (ingestionAuthLabel) ingestionAuthLabel.textContent = `Signed In: ${name.split(" ")[0]}`;
 
             const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture || user.avatar_url;
             if (avatarUrl && userAvatarCircle) {
@@ -1814,6 +1885,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             if (headerAuthBtn) headerAuthBtn.classList.remove("hidden");
             if (userProfileBadge) userProfileBadge.classList.add("hidden");
+            if (ingestionAuthLabel) ingestionAuthLabel.textContent = "Sign In (Google / Phone)";
         }
     }
 

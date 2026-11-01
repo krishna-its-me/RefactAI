@@ -14,7 +14,7 @@ class FeatureBuilder:
     """Orchestrates static analysis, git mining, and ML risk prediction across software projects."""
 
     @classmethod
-    def analyze_repository(cls, repo_url: str, branch: str = "main", max_files: int = 150, model_type: str = "random_forest", use_sample_if_fail: bool = True) -> ProjectHealthSummary:
+    def analyze_repository(cls, repo_url: str, branch: str = "main", max_files: int = 150, model_type: str = "random_forest", use_sample_if_fail: bool = True, github_token: str = None) -> ProjectHealthSummary:
         raw_name = repo_url.rstrip("/").split("/")[-1].replace(".git", "") or "Microservices Architecture Suite"
         repo_name = raw_name.replace("demo-", "").replace("demo_", "").replace("demo", "").strip() or "Architecture Suite"
         temp_dir = tempfile.mkdtemp(prefix="refactai_")
@@ -27,7 +27,7 @@ class FeatureBuilder:
             if os.path.exists(repo_url):
                 target_path = repo_url
             else:
-                success = GitMiner.clone_repository(repo_url, temp_dir, depth=40)
+                success = GitMiner.clone_repository(repo_url, temp_dir, depth=40, github_token=github_token)
                 target_path = temp_dir if success else None
 
             if not target_path or not os.path.exists(target_path):

@@ -79,7 +79,8 @@ def analyze_repository(request: AnalyzeRepoRequest):
             branch=request.branch or "main",
             max_files=request.max_files or 100,
             model_type=request.model_type or "random_forest",
-            use_sample_if_fail=request.use_sample_if_fail
+            use_sample_if_fail=request.use_sample_if_fail,
+            github_token=request.github_token
         )
         # Record repository analysis & mined git history under user_id to Supabase
         try:

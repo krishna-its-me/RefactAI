@@ -9,6 +9,7 @@ class AnalyzeRepoRequest(BaseModel):
     use_sample_if_fail: Optional[bool] = Field(True, description="Fallback gracefully to simulated analysis if GitHub rate limited or invalid URL")
     user_id: Optional[str] = Field(None, description="Supabase authenticated User ID")
     user_email: Optional[str] = Field(None, description="Supabase authenticated user email or phone")
+    github_token: Optional[str] = Field(None, description="GitHub Personal Access Token (PAT) for private repos or rate limit elevation")
 
 class GitCommitItem(BaseModel):
     commit_hash: str

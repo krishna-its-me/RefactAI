@@ -2825,3 +2825,147 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
 }
+
+/* ==========================================================================
+   Pasting Block, Auth Token & Quick Auth Enhancements
+   ========================================================================== */
+.label-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.paste-hint-badge {
+    font-size: 0.72rem;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    padding: 0.12rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.btn-paste-pill {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #181820;
+    border: 1px solid #333342;
+    color: #00D2FF;
+    padding: 0.3rem 0.65rem;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    z-index: 2;
+}
+.btn-paste-pill:hover {
+    background: #0019FF;
+    border-color: #0019FF;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 25, 255, 0.4);
+}
+
+.btn-clear-input {
+    position: absolute;
+    right: 4.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #71717a;
+    font-size: 1.25rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0.2rem;
+    transition: color 0.15s;
+    z-index: 2;
+}
+.btn-clear-input:hover {
+    color: #ef4444;
+}
+
+.auth-token-expand-block {
+    margin-top: 0.75rem;
+}
+
+.btn-token-toggle {
+    background: transparent;
+    border: none;
+    color: #71717a;
+    font-size: 0.78rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    padding: 0.2rem 0;
+    transition: color 0.15s;
+}
+.btn-token-toggle:hover {
+    color: #00D2FF;
+}
+
+.token-input-row {
+    margin-top: 0.45rem;
+    max-width: 600px;
+}
+
+.field-hint-sm {
+    font-size: 0.72rem;
+    color: #71717a;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.preset-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #1a1a20;
+}
+
+.preset-links-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-subtle-auth {
+    background: rgba(0, 25, 255, 0.08);
+    border: 1px solid rgba(0, 25, 255, 0.3);
+    color: #00D2FF;
+    padding: 0.32rem 0.75rem;
+    border-radius: 5px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-subtle-auth:hover {
+    background: rgba(0, 25, 255, 0.2);
+    border-color: #00D2FF;
+    color: #ffffff;
+}

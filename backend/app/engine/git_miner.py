@@ -11,15 +11,20 @@ class GitMiner:
     BUG_KEYWORDS = re.compile(r'\b(fix|fixed|fixes|bug|bugs|patch|resolved|resolves|issue|defect|error|hotfix)\b', re.IGNORECASE)
 
     @classmethod
-    def clone_repository(cls, repo_url: str, target_dir: str, depth: int = 50) -> bool:
-        """Performs a shallow clone with strict timeout and prompt suppression."""
+    def clone_repository(cls, repo_url: str, target_dir: str, depth: int = 50, github_token: str = None) -> bool:
+        """Performs a shallow clone with strict timeout and prompt suppression. Supports GitHub tokens for auth."""
         try:
             import subprocess
+            clone_url = repo_url
+            if github_token and "github.com" in repo_url:
+                clean_url = repo_url.replace("https://", "").replace("http://", "")
+                clone_url = f"https://{github_token}@{clean_url}"
+
             env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
             result = subprocess.run(
-                ["git", "clone", "--depth", str(depth), repo_url, target_dir],
+                ["git", "clone", "--depth", str(depth), clone_url, target_dir],
                 env=env,
-                timeout=20,
+                timeout=25,
                 capture_output=True,
                 text=True
             )
