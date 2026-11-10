@@ -100,3 +100,29 @@ class UserProfileSync(BaseModel):
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
     auth_provider: Optional[str] = "google"
+
+class UserSignUpRequest(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=100, description="Full Name of User")
+    email: str = Field(..., min_length=5, max_length=150, description="Email Address")
+    password: str = Field(..., min_length=6, max_length=100, description="Password (min 6 characters)")
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., description="Email Address")
+    password: str = Field(..., description="Password")
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., description="User Email for Password Reset")
+
+class AuthUserData(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    avatar_url: Optional[str] = ""
+    auth_provider: str = "email"
+
+class AuthResponse(BaseModel):
+    status: str = "success"
+    message: str = ""
+    access_token: str
+    token_type: str = "bearer"
+    user: AuthUserData

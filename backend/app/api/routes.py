@@ -1,5 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query
-from ..models.schemas import AnalyzeRepoRequest, ProjectHealthSummary, InquirySubmission, UserProfileSync
+from fastapi import APIRouter, HTTPException, Query, Header
+from ..models.schemas import (
+    AnalyzeRepoRequest, ProjectHealthSummary, InquirySubmission, UserProfileSync,
+    UserSignUpRequest, UserLoginRequest, ForgotPasswordRequest, AuthResponse
+)
 from ..engine.feature_builder import FeatureBuilder
 from ..engine.model_predictor import predictor
 from ..engine.solution_generator import SolutionGenerator
@@ -26,8 +29,57 @@ def get_auth_config():
         "supabase_url": url,
         "supabase_anon_key": key,
         "is_configured": bool(url and key),
-        "auth_providers": ["google", "phone"]
+        "auth_providers": ["email", "google", "phone"]
     }
+
+@router.post("/auth/signup", response_model=AuthResponse)
+def sign_up_user(payload: UserSignUpRequest):
+    """Registers a new user account with email and password."""
+    try:
+        res = SupabaseService.sign_up(payload.full_name, payload.email, payload.password)
+        return res
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+@router.post("/auth/login", response_model=AuthResponse)
+def login_user(payload: UserLoginRequest):
+    """Authenticates an existing user account with email and password."""
+    try:
+        res = SupabaseService.sign_in(payload.email, payload.password)
+        return res
+    except ValueError as ve:
+        raise HTTPException(status_code=401, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+@router.post("/auth/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest):
+    """Sends password reset instructions to the requested email."""
+    try:
+        return SupabaseService.forgot_password(payload.email)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Password reset failed: {str(e)}")
+
+@router.post("/auth/logout")
+def logout_user(authorization: str = Header(None)):
+    """Logs out user and invalidates session token."""
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.split("Bearer ")[1].strip()
+        SupabaseService.remove_session(token)
+    return {"status": "success", "message": "Logged out successfully."}
+
+@router.get("/auth/me")
+def get_current_user(authorization: str = Header(None)):
+    """Returns the authenticated user details from the session bearer token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    token = authorization.split("Bearer ")[1].strip()
+    user = SupabaseService.get_user_by_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Session expired or invalid.")
+    return {"status": "success", "user": user}
 
 @router.post("/auth/profile")
 def sync_user_profile(profile: UserProfileSync):

@@ -432,14 +432,28 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // Export PDF Button
+        // Export PDF Button (Protected by Auth Gate)
         if (elements.btnExportPdf) {
-            elements.btnExportPdf.addEventListener("click", exportReportPDF);
+            elements.btnExportPdf.addEventListener("click", () => {
+                if (!currentSupabaseUser) {
+                    sessionStorage.setItem("pending_auth_action", "download_pdf");
+                    openAuthModal("Please sign in or create an account to download your official PDF report. Your analysis results are preserved and will download immediately upon signing in!");
+                    return;
+                }
+                exportReportPDF();
+            });
         }
 
-        // Share Report Button
+        // Share Report Button (Protected by Auth Gate)
         if (elements.btnShareReport) {
-            elements.btnShareReport.addEventListener("click", shareReport);
+            elements.btnShareReport.addEventListener("click", () => {
+                if (!currentSupabaseUser) {
+                    sessionStorage.setItem("pending_auth_action", "share_report");
+                    openAuthModal("Please sign in or create an account to share audit reports.");
+                    return;
+                }
+                shareReport();
+            });
         }
 
         // Drawer Jump to Solution
@@ -1916,27 +1930,102 @@ document.addEventListener("DOMContentLoaded", () => {
     function handleUserLoggedOut() {
         currentSupabaseUser = null;
         localStorage.removeItem("refactai_user");
+        localStorage.removeItem("refactai_token");
+        sessionStorage.removeItem("pending_auth_action");
         updateUserUI(null);
     }
 
-    // Modal UI Toggling
-    function openAuthModal() {
-        if (!authModal) return;
-        authModal.classList.remove("hidden");
+    // Modal UI Toggling & Mode Switching
+    const authModalTitle = document.getElementById("auth-modal-title");
+    const authModalDesc = document.getElementById("auth-modal-desc");
+    const authContextBanner = document.getElementById("auth-context-banner");
+    const authContextText = document.getElementById("auth-context-text");
+
+    const authViewLogin = document.getElementById("auth-view-login");
+    const authViewRegister = document.getElementById("auth-view-register");
+    const authViewForgot = document.getElementById("auth-view-forgot");
+    const authViewPhone = document.getElementById("auth-view-phone");
+
+    const linkToRegister = document.getElementById("link-to-register");
+    const linkToLogin = document.getElementById("link-to-login");
+    const linkToForgot = document.getElementById("link-to-forgot");
+    const linkForgotToLogin = document.getElementById("link-forgot-to-login");
+    const btnSwitchPhoneLogin = document.getElementById("btn-switch-phone-login");
+    const linkPhoneToLogin = document.getElementById("link-phone-to-login");
+
+    function setAuthView(mode) {
+        [authViewLogin, authViewRegister, authViewForgot, authViewPhone].forEach(v => {
+            if (v) v.classList.add("hidden");
+        });
         if (authStatusMsg) {
             authStatusMsg.textContent = "";
             authStatusMsg.className = "form-status-msg";
         }
+
+        if (mode === "register") {
+            authViewRegister?.classList.remove("hidden");
+            if (authModalTitle) authModalTitle.textContent = "Create Free Account";
+            if (authModalDesc) authModalDesc.textContent = "Join RefactAI to run continuous debt audits and download compliance PDF reports.";
+            document.getElementById("reg-name")?.focus();
+        } else if (mode === "forgot") {
+            authViewForgot?.classList.remove("hidden");
+            if (authModalTitle) authModalTitle.textContent = "Reset Your Password";
+            if (authModalDesc) authModalDesc.textContent = "Enter your email to receive recovery instructions.";
+            document.getElementById("forgot-email")?.focus();
+        } else if (mode === "phone") {
+            authViewPhone?.classList.remove("hidden");
+            if (authModalTitle) authModalTitle.textContent = "Phone OTP Verification";
+            if (authModalDesc) authModalDesc.textContent = "Sign in securely via mobile SMS one-time password.";
+            authPhoneInput?.focus();
+        } else {
+            authViewLogin?.classList.remove("hidden");
+            if (authModalTitle) authModalTitle.textContent = "Sign In to RefactAI";
+            if (authModalDesc) authModalDesc.textContent = "Access repository debt audits, export compliance-ready PDF reports, and view code solutions.";
+            document.getElementById("login-email")?.focus();
+        }
+    }
+
+    if (linkToRegister) linkToRegister.addEventListener("click", () => setAuthView("register"));
+    if (linkToLogin) linkToLogin.addEventListener("click", () => setAuthView("login"));
+    if (linkToForgot) linkToForgot.addEventListener("click", () => setAuthView("forgot"));
+    if (linkForgotToLogin) linkForgotToLogin.addEventListener("click", () => setAuthView("login"));
+    if (btnSwitchPhoneLogin) btnSwitchPhoneLogin.addEventListener("click", () => setAuthView("phone"));
+    if (linkPhoneToLogin) linkPhoneToLogin.addEventListener("click", () => setAuthView("login"));
+
+    // Toggle Password Visibility
+    document.querySelectorAll(".btn-toggle-pwd").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.getAttribute("data-target");
+            const input = document.getElementById(targetId);
+            if (input) {
+                const isPassword = input.getAttribute("type") === "password";
+                input.setAttribute("type", isPassword ? "text" : "password");
+                btn.textContent = isPassword ? "🙈" : "👁";
+            }
+        });
+    });
+
+    function openAuthModal(contextMsg = "") {
+        if (!authModal) return;
+        authModal.classList.remove("hidden");
+        if (contextMsg && authContextBanner && authContextText) {
+            authContextText.textContent = contextMsg;
+            authContextBanner.classList.remove("hidden");
+        } else if (authContextBanner) {
+            authContextBanner.classList.add("hidden");
+        }
+        setAuthView("login");
         document.body.style.overflow = "hidden";
     }
 
     function closeAuthModal() {
         if (!authModal) return;
         authModal.classList.add("hidden");
+        if (authContextBanner) authContextBanner.classList.add("hidden");
         document.body.style.overflow = "";
     }
 
-    if (headerAuthBtn) headerAuthBtn.addEventListener("click", openAuthModal);
+    if (headerAuthBtn) headerAuthBtn.addEventListener("click", () => openAuthModal());
     if (closeAuthModalBtn) closeAuthModalBtn.addEventListener("click", closeAuthModal);
     if (authModal) {
         authModal.addEventListener("click", (e) => {
@@ -1944,71 +2033,183 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Auth Tabs Switching (Google vs Phone)
-    authTabBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            authTabBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            const targetAuth = btn.getAttribute("data-auth");
+    // 1. Email/Password Sign-In
+    const formLogin = document.getElementById("form-login");
+    const btnSubmitLogin = document.getElementById("btn-submit-login");
+    const loginSpinner = document.getElementById("login-spinner");
 
-            if (targetAuth === "google") {
-                authPanelGoogle?.classList.remove("hidden");
-                authPanelPhone?.classList.add("hidden");
-            } else {
-                authPanelGoogle?.classList.add("hidden");
-                authPanelPhone?.classList.remove("hidden");
-                authPhoneInput?.focus();
-            }
-        });
-    });
+    if (formLogin) {
+        formLogin.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("login-email")?.value.trim();
+            const password = document.getElementById("login-password")?.value;
+            if (!email || !password) return;
 
-    // Google Sign-In Handler
-    if (btnGoogleSignin) {
-        btnGoogleSignin.addEventListener("click", async () => {
             try {
-                if (googleSpinner) googleSpinner.classList.remove("hidden");
-                if (googleBtnText) googleBtnText.textContent = "Connecting with Google...";
+                if (loginSpinner) loginSpinner.classList.remove("hidden");
+                if (btnSubmitLogin) btnSubmitLogin.disabled = true;
 
-                if (supabaseClient) {
-                    const { error } = await supabaseClient.auth.signInWithOAuth({
-                        provider: "google",
-                        options: { redirectTo: window.location.origin }
-                    });
-                    if (error) throw error;
-                } else {
-                    // Instant Sandbox / Local Mode: Creates verified Google Profile
-                    await new Promise(r => setTimeout(r, 650));
-                    const simulatedUser = {
-                        id: "usr_" + Math.random().toString(36).substring(2, 10),
-                        email: "developer@refactai.io",
-                        user_metadata: {
-                            full_name: "Developer (Google)",
-                            avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-                        },
-                        app_metadata: { provider: "google" }
-                    };
-                    await handleUserLoggedIn(simulatedUser, "local_verified");
-                    if (authStatusMsg) {
-                        authStatusMsg.textContent = "✓ Successfully authenticated with Google!";
-                        authStatusMsg.className = "form-status-msg success";
-                    }
-                    showToast("Signed in with Google successfully!");
-                    setTimeout(closeAuthModal, 1200);
+                const resp = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.detail || "Invalid email or password.");
                 }
+
+                if (data.access_token) {
+                    localStorage.setItem("refactai_token", data.access_token);
+                }
+                await handleUserLoggedIn(data.user, "email_password");
+                showToast(`Welcome back, ${data.user.full_name || data.user.email}!`);
+                closeAuthModal();
+
             } catch (err) {
-                console.error("Google sign-in failed:", err);
                 if (authStatusMsg) {
-                    authStatusMsg.textContent = `Google Sign-in: ${err.message}`;
+                    authStatusMsg.textContent = err.message;
                     authStatusMsg.className = "form-status-msg error";
                 }
             } finally {
-                if (googleSpinner) googleSpinner.classList.add("hidden");
-                if (googleBtnText) googleBtnText.textContent = "Continue with Google";
+                if (loginSpinner) loginSpinner.classList.add("hidden");
+                if (btnSubmitLogin) btnSubmitLogin.disabled = false;
             }
         });
     }
 
-    // Phone OTP: Step 1 (Send SMS)
+    // 2. Email/Password Sign-Up (Registration)
+    const formRegister = document.getElementById("form-register");
+    const btnSubmitRegister = document.getElementById("btn-submit-register");
+    const registerSpinner = document.getElementById("register-spinner");
+
+    if (formRegister) {
+        formRegister.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const fullName = document.getElementById("reg-name")?.value.trim();
+            const email = document.getElementById("reg-email")?.value.trim();
+            const password = document.getElementById("reg-password")?.value;
+            if (!fullName || !email || !password) return;
+
+            try {
+                if (registerSpinner) registerSpinner.classList.remove("hidden");
+                if (btnSubmitRegister) btnSubmitRegister.disabled = true;
+
+                const resp = await fetch("/api/auth/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ full_name: fullName, email, password })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.detail || "Registration failed.");
+                }
+
+                if (data.access_token) {
+                    localStorage.setItem("refactai_token", data.access_token);
+                }
+                await handleUserLoggedIn(data.user, "email_password");
+                showToast(`Account created! Welcome to RefactAI, ${fullName}!`);
+                closeAuthModal();
+
+            } catch (err) {
+                if (authStatusMsg) {
+                    authStatusMsg.textContent = err.message;
+                    authStatusMsg.className = "form-status-msg error";
+                }
+            } finally {
+                if (registerSpinner) registerSpinner.classList.add("hidden");
+                if (btnSubmitRegister) btnSubmitRegister.disabled = false;
+            }
+        });
+    }
+
+    // 3. Forgot Password
+    const formForgot = document.getElementById("form-forgot");
+    const btnSubmitForgot = document.getElementById("btn-submit-forgot");
+    const forgotSpinner = document.getElementById("forgot-spinner");
+
+    if (formForgot) {
+        formForgot.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("forgot-email")?.value.trim();
+            if (!email) return;
+
+            try {
+                if (forgotSpinner) forgotSpinner.classList.remove("hidden");
+                if (btnSubmitForgot) btnSubmitForgot.disabled = true;
+
+                const resp = await fetch("/api/auth/forgot-password", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.detail || "Failed to process recovery.");
+                }
+
+                if (authStatusMsg) {
+                    authStatusMsg.textContent = "✓ " + (data.message || "Password recovery instructions sent!");
+                    authStatusMsg.className = "form-status-msg success";
+                }
+                showToast("Password reset instructions sent!");
+                formForgot.reset();
+
+            } catch (err) {
+                if (authStatusMsg) {
+                    authStatusMsg.textContent = err.message;
+                    authStatusMsg.className = "form-status-msg error";
+                }
+            } finally {
+                if (forgotSpinner) forgotSpinner.classList.add("hidden");
+                if (btnSubmitForgot) btnSubmitForgot.disabled = false;
+            }
+        });
+    }
+
+    // 4. Google Sign-In & Sign-Up Handlers
+    const btnGoogleRegister = document.getElementById("btn-google-register");
+    async function triggerGoogleAuth() {
+        try {
+            if (supabaseClient) {
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: "google",
+                    options: { redirectTo: window.location.origin }
+                });
+                if (error) throw error;
+            } else {
+                // Instant Local Verified Google Profile
+                const simulatedUser = {
+                    id: "usr_g_" + Math.random().toString(36).substring(2, 10),
+                    email: "developer@refactai.io",
+                    display_name: "Developer (Google)",
+                    user_metadata: {
+                        full_name: "Developer (Google)",
+                        avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
+                    },
+                    app_metadata: { provider: "google" }
+                };
+                await handleUserLoggedIn(simulatedUser, "google_oauth");
+                showToast("Signed in with Google successfully!");
+                closeAuthModal();
+            }
+        } catch (err) {
+            console.error("Google auth error:", err);
+            if (authStatusMsg) {
+                authStatusMsg.textContent = `Google Sign-in: ${err.message}`;
+                authStatusMsg.className = "form-status-msg error";
+            }
+        }
+    }
+
+    if (btnGoogleSignin) btnGoogleSignin.addEventListener("click", triggerGoogleAuth);
+    if (btnGoogleRegister) btnGoogleRegister.addEventListener("click", triggerGoogleAuth);
+
+    // 5. Phone OTP Authentication
     let pendingPhoneNumber = "";
     if (btnSendOtp) {
         btnSendOtp.addEventListener("click", async () => {
@@ -2030,8 +2231,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const { error } = await supabaseClient.auth.signInWithOtp({ phone: pendingPhoneNumber });
                     if (error) throw error;
                 } else {
-                    // Sandbox SMS Simulation
-                    await new Promise(r => setTimeout(r, 600));
+                    await new Promise(r => setTimeout(r, 500));
                 }
 
                 if (phoneStep1) phoneStep1.classList.add("hidden");
@@ -2062,7 +2262,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Phone OTP: Step 2 (Verify OTP)
     if (btnVerifyOtp) {
         btnVerifyOtp.addEventListener("click", async () => {
             const token = authOtpInput?.value.trim();
@@ -2085,10 +2284,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         type: "sms"
                     });
                     if (error) throw error;
-                    handleUserLoggedIn(data.user, "supabase_cloud");
+                    await handleUserLoggedIn(data.user, "supabase_cloud");
                 } else {
-                    // Sandbox simulation
-                    await new Promise(r => setTimeout(r, 600));
+                    await new Promise(r => setTimeout(r, 500));
                     const phoneUser = {
                         id: "usr_ph_" + Math.random().toString(36).substring(2, 10),
                         phone: pendingPhoneNumber,
@@ -2099,16 +2297,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     await handleUserLoggedIn(phoneUser, "phone_verified");
                 }
 
-                if (authStatusMsg) {
-                    authStatusMsg.textContent = "✓ Phone verified successfully!";
-                    authStatusMsg.className = "form-status-msg success";
-                }
                 showToast(`Signed in as ${pendingPhoneNumber}`);
-                setTimeout(() => {
-                    closeAuthModal();
-                    if (phoneStep2) phoneStep2.classList.add("hidden");
-                    if (phoneStep1) phoneStep1.classList.remove("hidden");
-                }, 1200);
+                closeAuthModal();
 
             } catch (err) {
                 if (authStatusMsg) {
@@ -2122,10 +2312,43 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // 6. Resume Pending Action (Download PDF / Share) After Successful Login
+    async function resumePendingAuthAction() {
+        const pending = sessionStorage.getItem("pending_auth_action");
+        if (!pending) return;
+
+        sessionStorage.removeItem("pending_auth_action");
+        if (pending === "download_pdf") {
+            showToast("Authenticated! Generating and downloading your official PDF report...");
+            setTimeout(() => {
+                exportReportPDF();
+            }, 450);
+        } else if (pending === "share_report") {
+            showToast("Authenticated! Generating shareable report link...");
+            setTimeout(() => {
+                shareReport();
+            }, 450);
+        }
+    }
+
+    // Update handleUserLoggedIn to trigger resumePendingAuthAction
+    const originalHandleUserLoggedIn = handleUserLoggedIn;
+    handleUserLoggedIn = async function(user, source = "supabase_cloud") {
+        await originalHandleUserLoggedIn(user, source);
+        await resumePendingAuthAction();
+    };
+
     // Sign Out Handler
     if (btnSignOut) {
         btnSignOut.addEventListener("click", async () => {
+            const token = localStorage.getItem("refactai_token");
             try {
+                if (token) {
+                    await fetch("/api/auth/logout", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${token}` }
+                    });
+                }
                 if (supabaseClient) {
                     await supabaseClient.auth.signOut();
                 }

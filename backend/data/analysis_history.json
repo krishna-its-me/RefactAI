@@ -1,5 +1,19 @@
 [
   {
+    "id": "caebd1bc-9776-4f6a-a7ca-5056f5c5d06b",
+    "user_id": null,
+    "repo_name": "microservices-architecture-suite",
+    "repo_url": "https://github.com/refactai/microservices-architecture-suite",
+    "branch": "main",
+    "overall_debt_score": 34.9,
+    "health_status": "Healthy / Low Debt Burden",
+    "total_files": 10,
+    "critical_risk_files": 2,
+    "avg_complexity": 14.9,
+    "active_model": "random_forest",
+    "analyzed_at": "2026-11-01 16:28:23"
+  },
+  {
     "id": "8edd720a-f9b1-43a0-aae1-b76c89d5f041",
     "user_id": null,
     "repo_name": "microservices-architecture-suite",

@@ -2657,51 +2657,162 @@ body {
     max-width: 480px;
 }
 
-.auth-tabs {
+.auth-context-banner {
     display: flex;
-    border-bottom: 1px solid #222228;
-    background: #0c0c0e;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(0, 85, 255, 0.12);
+    border-bottom: 1px solid rgba(0, 85, 255, 0.28);
+    color: #00D2FF;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    animation: fadeIn 0.2s ease;
+}
+.auth-context-banner svg {
+    flex-shrink: 0;
 }
 
-.auth-tab-btn {
-    flex: 1;
+.auth-view {
+    padding: 1.5rem 1.75rem 1.25rem;
+}
+.auth-view.hidden {
+    display: none !important;
+}
+
+.auth-form-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+}
+
+.auth-sub-desc {
+    font-size: 0.85rem;
+    color: #a1a1aa;
+    line-height: 1.45;
+    margin: 0 0 0.5rem;
+}
+
+.label-row-split {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.link-subtle {
+    background: transparent;
+    border: none;
+    color: #71717a;
+    font-size: 0.78rem;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+}
+.link-subtle:hover {
+    color: #00D2FF;
+    text-decoration: underline;
+}
+
+.btn-toggle-pwd {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #71717a;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+.btn-toggle-pwd:hover {
+    color: #ffffff;
+}
+
+.auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 1.25rem 0 1rem;
+}
+.auth-divider::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #27272a;
+    z-index: 1;
+}
+.auth-divider span {
+    position: relative;
+    background: #111111;
+    padding: 0 0.75rem;
+    font-size: 0.75rem;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 2;
+}
+
+.social-auth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+@media (max-width: 480px) {
+    .social-auth-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.btn-phone-action {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    padding: 0.85rem 1rem;
-    color: #8e8e8e;
+    gap: 0.55rem;
+    background: #181820;
+    color: #e2e8f0;
+    border: 1px solid #2e2e3a;
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
     font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s ease;
 }
-.auth-tab-btn.active {
+.btn-phone-action:hover {
+    background: #23232e;
+    border-color: #3f3f50;
     color: #ffffff;
-    border-bottom-color: #0019FF;
-    background: rgba(255, 255, 255, 0.03);
 }
 
-.auth-panel {
-    padding: 1.5rem 1.75rem;
-}
-
-.google-auth-box {
-    text-align: center;
+.auth-switch-footer {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    gap: 1.25rem;
+    gap: 0.4rem;
+    font-size: 0.84rem;
+    color: #8e8e93;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #1e1e24;
 }
 
-.auth-intro-p {
-    font-size: 0.85rem;
-    color: #a1a1aa;
-    line-height: 1.5;
-    margin: 0;
+.link-bold {
+    background: transparent;
+    border: none;
+    color: #00D2FF;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.84rem;
+    transition: color 0.15s;
+}
+.link-bold:hover {
+    color: #ffffff;
+    text-decoration: underline;
 }
 
 .btn-google-action {
@@ -2714,8 +2825,8 @@ body {
     color: #1f2937;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9rem;
+    padding: 0.7rem 1.25rem;
+    font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s, box-shadow 0.15s;

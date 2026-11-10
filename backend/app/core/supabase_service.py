@@ -1,6 +1,8 @@
 import os
 import json
 import uuid
+import hashlib
+import secrets
 import urllib.request
 import urllib.error
 from datetime import datetime
@@ -231,6 +233,312 @@ class SupabaseService:
                 print(f"[SupabaseService] Profile sync error: {e}")
 
         return {"success": True, "storage": "local_backup", "user": record}
+
+    @classmethod
+    def sign_up(cls, full_name: str, email: str, password: str) -> Dict[str, Any]:
+        """Registers a new user with Supabase Auth or secure local fallback."""
+        email_clean = email.strip().lower()
+        full_name_clean = full_name.strip()
+
+        url, key = cls.get_credentials()
+        if url and key:
+            try:
+                target_url = f"{url}/auth/v1/signup"
+                req_data = json.dumps({
+                    "email": email_clean,
+                    "password": password,
+                    "data": {"full_name": full_name_clean}
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    target_url,
+                    data=req_data,
+                    headers={
+                        "apikey": key,
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    resp_data = json.loads(resp.read().decode("utf-8"))
+                    user_obj = resp_data.get("user") or resp_data
+                    token = resp_data.get("access_token") or secrets.token_urlsafe(32)
+                    user_data = {
+                        "id": user_obj.get("id"),
+                        "email": email_clean,
+                        "full_name": full_name_clean,
+                        "avatar_url": "",
+                        "auth_provider": "email"
+                    }
+                    cls.sync_user_profile(user_data)
+                    return {
+                        "status": "success",
+                        "message": "User registered successfully in Supabase Cloud.",
+                        "access_token": token,
+                        "token_type": "bearer",
+                        "user": user_data
+                    }
+            except Exception as e:
+                print(f"[SupabaseService] Cloud signup failed, using local secure vault: {e}")
+
+        # Local Secure Storage Fallback
+        users_file = DATA_DIR / "users.json"
+        users = []
+        if users_file.exists():
+            try:
+                with open(users_file, "r", encoding="utf-8") as f:
+                    users = json.load(f)
+            except Exception:
+                users = []
+
+        # Check existing email
+        for u in users:
+            if u.get("email") == email_clean:
+                raise ValueError("An account with this email address already exists.")
+
+        user_id = str(uuid.uuid4())
+        salt = secrets.token_hex(16)
+        pwd_hash = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
+
+        user_record = {
+            "id": user_id,
+            "email": email_clean,
+            "full_name": full_name_clean,
+            "salt": salt,
+            "hash": pwd_hash,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        users.append(user_record)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with open(users_file, "w", encoding="utf-8") as f:
+            json.dump(users, f, indent=2)
+
+        token = secrets.token_urlsafe(32)
+        cls._save_session(token, user_id, email_clean, full_name_clean)
+
+        user_data = {
+            "id": user_id,
+            "email": email_clean,
+            "full_name": full_name_clean,
+            "avatar_url": "",
+            "auth_provider": "email"
+        }
+        cls.sync_user_profile(user_data)
+
+        return {
+            "status": "success",
+            "message": "Account created successfully.",
+            "access_token": token,
+            "token_type": "bearer",
+            "user": user_data
+        }
+
+    @classmethod
+    def sign_in(cls, email: str, password: str) -> Dict[str, Any]:
+        """Authenticates a user via Supabase Auth or secure local fallback."""
+        email_clean = email.strip().lower()
+
+        url, key = cls.get_credentials()
+        if url and key:
+            try:
+                target_url = f"{url}/auth/v1/token?grant_type=password"
+                req_data = json.dumps({
+                    "email": email_clean,
+                    "password": password
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    target_url,
+                    data=req_data,
+                    headers={
+                        "apikey": key,
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    resp_data = json.loads(resp.read().decode("utf-8"))
+                    user_obj = resp_data.get("user") or {}
+                    token = resp_data.get("access_token") or secrets.token_urlsafe(32)
+                    meta = user_obj.get("user_metadata") or {}
+                    full_name = meta.get("full_name") or user_obj.get("email") or "RefactAI User"
+                    user_data = {
+                        "id": user_obj.get("id"),
+                        "email": email_clean,
+                        "full_name": full_name,
+                        "avatar_url": meta.get("avatar_url") or "",
+                        "auth_provider": "email"
+                    }
+                    return {
+                        "status": "success",
+                        "message": "Logged in successfully via Supabase Cloud.",
+                        "access_token": token,
+                        "token_type": "bearer",
+                        "user": user_data
+                    }
+            except Exception as e:
+                print(f"[SupabaseService] Cloud signin failed, checking local vault: {e}")
+
+        # Local Secure Storage Verification
+        users_file = DATA_DIR / "users.json"
+        users = []
+        if users_file.exists():
+            try:
+                with open(users_file, "r", encoding="utf-8") as f:
+                    users = json.load(f)
+            except Exception:
+                users = []
+
+        found_user = None
+        for u in users:
+            if u.get("email") == email_clean:
+                found_user = u
+                break
+
+        if not found_user:
+            raise ValueError("Invalid email or password.")
+
+        expected_hash = hashlib.sha256((found_user["salt"] + password).encode("utf-8")).hexdigest()
+        if expected_hash != found_user["hash"]:
+            raise ValueError("Invalid email or password.")
+
+        token = secrets.token_urlsafe(32)
+        cls._save_session(token, found_user["id"], found_user["email"], found_user["full_name"])
+
+        user_data = {
+            "id": found_user["id"],
+            "email": found_user["email"],
+            "full_name": found_user["full_name"],
+            "avatar_url": "",
+            "auth_provider": "email"
+        }
+        return {
+            "status": "success",
+            "message": "Logged in successfully.",
+            "access_token": token,
+            "token_type": "bearer",
+            "user": user_data
+        }
+
+    @classmethod
+    def forgot_password(cls, email: str) -> Dict[str, Any]:
+        """Handles password recovery requests via Supabase or local email log."""
+        email_clean = email.strip().lower()
+
+        url, key = cls.get_credentials()
+        if url and key:
+            try:
+                target_url = f"{url}/auth/v1/recover"
+                req_data = json.dumps({"email": email_clean}).encode("utf-8")
+                req = urllib.request.Request(
+                    target_url,
+                    data=req_data,
+                    headers={
+                        "apikey": key,
+                        "Authorization": f"Bearer {key}",
+                        "Content-Type": "application/json"
+                    },
+                    method="POST"
+                )
+                with urllib.request.urlopen(req, timeout=8):
+                    return {
+                        "status": "success",
+                        "message": "Password recovery email sent via Supabase."
+                    }
+            except Exception as e:
+                print(f"[SupabaseService] Cloud recovery warning: {e}")
+
+        # Local recovery record
+        cls._save_local_backup("password_resets.json", {
+            "email": email_clean,
+            "reset_token": secrets.token_hex(16),
+            "requested_at": datetime.utcnow().isoformat()
+        })
+        return {
+            "status": "success",
+            "message": f"Password recovery instructions generated for {email_clean}."
+        }
+
+    @classmethod
+    def get_user_by_token(cls, token: str) -> Optional[Dict[str, Any]]:
+        """Validates a bearer token and returns the authenticated user."""
+        if not token:
+            return None
+
+        # Check local sessions
+        sessions_file = DATA_DIR / "sessions.json"
+        if sessions_file.exists():
+            try:
+                with open(sessions_file, "r", encoding="utf-8") as f:
+                    sessions = json.load(f)
+                    if token in sessions:
+                        return sessions[token]
+            except Exception:
+                pass
+
+        # Check Supabase cloud token
+        url, key = cls.get_credentials()
+        if url and key:
+            try:
+                target_url = f"{url}/auth/v1/user"
+                req = urllib.request.Request(
+                    target_url,
+                    headers={
+                        "apikey": key,
+                        "Authorization": f"Bearer {token}"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=6) as resp:
+                    u = json.loads(resp.read().decode("utf-8"))
+                    meta = u.get("user_metadata") or {}
+                    return {
+                        "id": u.get("id"),
+                        "email": u.get("email"),
+                        "full_name": meta.get("full_name") or u.get("email") or "RefactAI User",
+                        "avatar_url": meta.get("avatar_url") or "",
+                        "auth_provider": "supabase"
+                    }
+            except Exception:
+                pass
+
+        return None
+
+    @classmethod
+    def _save_session(cls, token: str, user_id: str, email: str, full_name: str) -> None:
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            sessions_file = DATA_DIR / "sessions.json"
+            sessions = {}
+            if sessions_file.exists():
+                try:
+                    with open(sessions_file, "r", encoding="utf-8") as f:
+                        sessions = json.load(f)
+                except Exception:
+                    sessions = {}
+            sessions[token] = {
+                "id": user_id,
+                "email": email,
+                "full_name": full_name,
+                "logged_in_at": datetime.utcnow().isoformat()
+            }
+            with open(sessions_file, "w", encoding="utf-8") as f:
+                json.dump(sessions, f, indent=2)
+        except Exception as e:
+            print(f"[SupabaseService] Session save failed: {e}")
+
+    @classmethod
+    def remove_session(cls, token: str) -> None:
+        try:
+            sessions_file = DATA_DIR / "sessions.json"
+            if sessions_file.exists():
+                with open(sessions_file, "r", encoding="utf-8") as f:
+                    sessions = json.load(f)
+                if token in sessions:
+                    del sessions[token]
+                    with open(sessions_file, "w", encoding="utf-8") as f:
+                        json.dump(sessions, f, indent=2)
+        except Exception:
+            pass
 
     @classmethod
     def get_user_history(cls, user_id: str) -> Dict[str, Any]:

@@ -945,66 +945,147 @@
         </div>
     </div>
 
-    <!-- Supabase Authentication Modal (Google OAuth & Phone OTP) -->
+    <!-- RefactAI Authentication Modal (Email/Password, Google OAuth, Phone OTP, Registration, Forgot Password) -->
     <div id="auth-modal" class="modal-overlay hidden">
         <div class="modal-card auth-modal-card">
             <div class="modal-header">
                 <div class="modal-header-info">
                     <div class="modal-supa-badge">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        <span>Supabase Auth Cloud</span>
+                        <span>Supabase Secure Authentication</span>
                     </div>
-                    <h3 class="modal-title">Sign In to RefactAI</h3>
-                    <p class="modal-desc">Access your repository audit history, saved Git analytics, and automated refactoring solutions.</p>
+                    <h3 class="modal-title" id="auth-modal-title">Sign In to RefactAI</h3>
+                    <p class="modal-desc" id="auth-modal-desc">Access repository debt audits, export compliance-ready PDF reports, and view code solutions.</p>
                 </div>
                 <button type="button" id="close-auth-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
             </div>
 
-            <!-- Auth Method Switcher -->
-            <div class="auth-tabs">
-                <button type="button" class="auth-tab-btn active" data-auth="google">
-                    <svg width="15" height="15" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
-                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                    </svg>
-                    Google Account
-                </button>
-                <button type="button" class="auth-tab-btn" data-auth="phone">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                    Phone OTP
-                </button>
+            <!-- Context Banner (Appears when triggered by Download PDF or Analyze guard) -->
+            <div id="auth-context-banner" class="auth-context-banner hidden">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span id="auth-context-text">Please sign in to download your official PDF report. Your analysis is preserved!</span>
             </div>
 
-            <!-- Tab 1: Google OAuth Panel -->
-            <div id="auth-panel-google" class="auth-panel">
-                <div class="google-auth-box">
-                    <p class="auth-intro-p">Sign in securely with your Google Workspace or personal Gmail. Audits and Git history will be automatically tied to your account in Supabase.</p>
-                    <button type="button" id="btn-google-signin" class="btn-google-action">
+            <!-- Mode 1: Sign In (Email / Password) -->
+            <div id="auth-view-login" class="auth-view">
+                <form id="form-login" class="auth-form-body">
+                    <div class="form-group">
+                        <label for="login-email" class="form-label">Email Address *</label>
+                        <input type="email" id="login-email" class="form-input" placeholder="name@company.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row-split">
+                            <label for="login-password" class="form-label">Password *</label>
+                            <button type="button" id="link-to-forgot" class="link-subtle">Forgot Password?</button>
+                        </div>
+                        <div class="input-with-icon">
+                            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+                            <button type="button" class="btn-toggle-pwd" data-target="login-password" title="Toggle visibility">👁</button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-submit-login" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        <span class="btn-text">Sign In</span>
+                        <span class="btn-spinner hidden" id="login-spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>or continue with</span>
+                </div>
+
+                <div class="social-auth-grid">
+                    <button type="button" id="btn-google-login" class="btn-google-action">
                         <svg width="18" height="18" viewBox="0 0 24 24">
                             <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
                             <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
                             <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
                             <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
                         </svg>
-                        <span id="google-btn-text">Continue with Google</span>
-                        <span class="btn-spinner hidden" id="google-spinner"></span>
+                        <span>Google</span>
                     </button>
+                    <button type="button" id="btn-switch-phone-login" class="btn-phone-action">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        <span>Phone OTP</span>
+                    </button>
+                </div>
+
+                <div class="auth-switch-footer">
+                    <span>Don't have an account?</span>
+                    <button type="button" id="link-to-register" class="link-bold">Create an account</button>
                 </div>
             </div>
 
-            <!-- Tab 2: Phone OTP Panel -->
-            <div id="auth-panel-phone" class="auth-panel hidden">
-                <div class="phone-auth-container">
-                    <!-- Step 1: Input Phone -->
+            <!-- Mode 2: Sign Up (Registration) -->
+            <div id="auth-view-register" class="auth-view hidden">
+                <form id="form-register" class="auth-form-body">
+                    <div class="form-group">
+                        <label for="reg-name" class="form-label">Full Name *</label>
+                        <input type="text" id="reg-name" class="form-input" placeholder="Jane Doe" required autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email" class="form-label">Work or Personal Email *</label>
+                        <input type="email" id="reg-email" class="form-input" placeholder="jane@company.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password" class="form-label">Password (min 6 characters) *</label>
+                        <div class="input-with-icon">
+                            <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+                            <button type="button" class="btn-toggle-pwd" data-target="reg-password" title="Toggle visibility">👁</button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-submit-register" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        <span class="btn-text">Create Free Account</span>
+                        <span class="btn-spinner hidden" id="register-spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>or sign up with</span>
+                </div>
+
+                <button type="button" id="btn-google-register" class="btn-google-action">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    <span>Sign up with Google</span>
+                </button>
+
+                <div class="auth-switch-footer">
+                    <span>Already have an account?</span>
+                    <button type="button" id="link-to-login" class="link-bold">Sign In</button>
+                </div>
+            </div>
+
+            <!-- Mode 3: Forgot Password -->
+            <div id="auth-view-forgot" class="auth-view hidden">
+                <form id="form-forgot" class="auth-form-body">
+                    <p class="auth-sub-desc">Enter your email address and we will send you secure recovery instructions to reset your password.</p>
+                    <div class="form-group">
+                        <label for="forgot-email" class="form-label">Email Address *</label>
+                        <input type="email" id="forgot-email" class="form-input" placeholder="name@company.com" required autocomplete="email">
+                    </div>
+                    <button type="submit" id="btn-submit-forgot" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        <span class="btn-text">Send Password Reset Link</span>
+                        <span class="btn-spinner hidden" id="forgot-spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-switch-footer">
+                    <button type="button" id="link-forgot-to-login" class="link-bold">&larr; Back to Sign In</button>
+                </div>
+            </div>
+
+            <!-- Mode 4: Phone OTP -->
+            <div id="auth-view-phone" class="auth-view hidden">
+                <div class="phone-auth-container" style="padding: 1.25rem 1.75rem;">
                     <div id="phone-step-1">
                         <div class="form-group">
                             <label for="auth-phone-input" class="form-label">Phone Number (with country code) *</label>
-                            <input type="tel" id="auth-phone-input" class="form-input" placeholder="+1 555 123 4567 or +91 98765 43210" required>
-                            <span class="field-hint">Include country code (e.g. +1 for US/CA, +91 for India, +44 for UK).</span>
+                            <input type="tel" id="auth-phone-input" class="form-input" placeholder="+1 555 123 4567 or +91 98765 43210">
+                            <span class="field-hint">e.g. +1 for US, +91 for India, +44 for UK</span>
                         </div>
                         <button type="button" id="btn-send-otp" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.75rem;">
                             <span class="btn-text">Send Verification SMS</span>
@@ -1012,7 +1093,6 @@
                         </button>
                     </div>
 
-                    <!-- Step 2: Input OTP -->
                     <div id="phone-step-2" class="hidden">
                         <div class="form-group">
                             <label for="auth-otp-input" class="form-label">6-Digit Verification Code *</label>
@@ -1027,6 +1107,10 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <div class="auth-switch-footer">
+                    <button type="button" id="link-phone-to-login" class="link-bold">&larr; Back to Email Sign In</button>
                 </div>
             </div>
 
