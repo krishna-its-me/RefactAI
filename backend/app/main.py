@@ -21,8 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount API endpoints
+# Mount API endpoints (both with and without /api prefix for Vercel/serverless compatibility)
 app.include_router(api_router, prefix=settings.API_PREFIX)
+app.include_router(api_router)
 
 # Mount frontend static directory if exists
 if STATIC_DIR.exists():

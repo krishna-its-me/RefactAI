@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RefactAI - Code Health & Technical Debt Analysis System using Machine Learning and Explainable AI (SHAP).">
+    <title>RefactAI | Technical Debt Intelligence & Code Health System</title>
+    <!-- Roboto Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,500;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=2.8">
+    <!-- Supabase JS Client for Cloud Authentication (Google OAuth + Phone OTP) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- jsPDF and AutoTable for Client-Side Authorized PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <!-- Top Global Navigation Bar -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand-group">
+                <div class="brand-logo-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-title">RefactAI</span>
+                </div>
+            </div>
+
+            <!-- Segmented Nav -->
+            <nav class="header-nav">
+                <a href="#dashboard" class="nav-link active">Dashboard</a>
+                <a href="#solutions" class="nav-link" id="nav-solutions-link">Solutions</a>
+                <a href="#assistant" class="nav-link" id="nav-assistant-link">Smart Assistant ✨</a>
+                <a href="#benchmarks" class="nav-link" id="nav-benchmarks-link">Benchmarks</a>
+                <a href="#inquiry" class="nav-link nav-inquiry-pill" id="nav-inquiry-link">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    Contact &amp; Inquiries
+                </a>
+                <a href="/docs" target="_blank" class="nav-link">API Docs &nearr;</a>
+            </nav>
+
+            <div class="header-right-actions">
+                <div class="header-status">
+                    <span class="status-indicator-dot"></span>
+                    <span id="system-status-text" class="status-text">Engine Ready</span>
+                </div>
+
+                <div class="header-auth-group">
+                    <!-- Logged Out State -->
+                    <button type="button" id="header-auth-btn" class="btn-auth-signin">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        <span>Sign In</span>
+                    </button>
+                    <!-- Logged In State (Hidden by default) -->
+                    <div id="user-profile-badge" class="user-badge hidden">
+                        <div class="user-avatar-circle" id="user-avatar-circle">
+                            <span id="user-avatar-initials">U</span>
+                        </div>
+                        <span id="user-display-name" class="user-badge-name">User</span>
+                        <button type="button" id="btn-sign-out" class="btn-signout" title="Sign Out">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-header">
+                <div class="tagline-pill">
+                    Automated Code Health &amp; Technical Debt Intelligence
+                </div>
+                <h1 class="hero-title">Technical Debt Analysis System</h1>
+                <p class="hero-subtitle">
+                    RefactAI analyzes source code complexity and Git evolution history to assess maintenance risks at the file level using Machine Learning, Explainable AI (SHAP), and automated commented code solutions.
+                </p>
+            </div>
+
+            <!-- Ingestion Form Card -->
+            <div class="ingestion-card">
+                <form id="analyze-form" class="ingestion-form">
+                    <div class="input-row">
+                        <div class="input-field-wrapper repo-field">
+                            <div class="label-with-action">
+                                <label class="input-label" for="repo-url-input">GitHub Repository URL or Local Directory</label>
+                                <span class="paste-hint-badge">Ready to Paste</span>
+                            </div>
+                            <div class="input-with-icon">
+                                <span class="input-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                                    </svg>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    id="repo-url-input" 
+                                    placeholder="Paste your GitHub repository URL or local directory (e.g. https://github.com/owner/repo)..."
+                                    value=""
+                                    autofocus
+                                    required
+                                >
+                                <button type="button" id="btn-paste-clipboard" class="btn-paste-pill" title="Paste from clipboard">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                                    <span>Paste</span>
+                                </button>
+                                <button type="button" id="btn-clear-repo" class="btn-clear-input hidden" title="Clear input">&times;</button>
+                            </div>
+                        </div>
+
+                        <div class="input-field-wrapper model-field">
+                            <label class="input-label" for="model-select">ML Evaluation Model</label>
+                            <div class="select-wrapper">
+                                <select id="model-select">
+                                    <option value="random_forest" selected>Random Forest (Ensemble)</option>
+                                    <option value="xgboost">XGBoost / Gradient Boosting</option>
+                                    <option value="decision_tree">Decision Tree</option>
+                                    <option value="logistic_regression">Logistic Regression (Baseline)</option>
+                                </select>
+                                <span class="select-arrow">&#9662;</span>
+                            </div>
+                        </div>
+
+                        <div class="action-button-wrapper">
+                            <button type="submit" id="analyze-btn" class="btn-primary">
+                                <span class="btn-text">Analyze Debt</span>
+                                <span class="btn-spinner hidden" id="analyze-spinner"></span>
+                                <span class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Optional GitHub Auth Token (PAT) for Private Repos -->
+                    <div class="auth-token-expand-block">
+                        <button type="button" id="toggle-auth-token-btn" class="btn-token-toggle">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <span id="token-toggle-label">+ Add GitHub Auth Token (PAT for private repos / high rate limits)</span>
+                        </button>
+                        <div id="auth-token-fields" class="token-input-row hidden">
+                            <div class="input-with-icon">
+                                <span class="input-icon">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7m-1.5 1.5L13 10m-3-1l2 2m-2-2a5 5 0 1 0 7 7l5-5-7-7z"></path></svg>
+                                </span>
+                                <input type="password" id="github-token-input" placeholder="GitHub Personal Access Token (ghp_... or github_pat_...)" autocomplete="off">
+                            </div>
+                            <span class="field-hint-sm">Used securely in-memory to clone private repositories or elevate rate limits.</span>
+                        </div>
+                    </div>
+
+                    <!-- Preset Buttons & Quick Auth Status -->
+                    <div class="preset-links">
+                        <div class="preset-links-left">
+                            <span class="preset-label">Quick Samples:</span>
+                            <button type="button" class="preset-btn" data-url="https://github.com/refactai/microservices-architecture-suite">Microservices Architecture</button>
+                            <button type="button" class="preset-btn" data-url="https://github.com/fastapi/fastapi">FastAPI Core</button>
+                            <button type="button" class="preset-btn" data-url="https://github.com/pallets/flask">Flask Backend</button>
+                        </div>
+                        <div class="preset-auth-right">
+                            <button type="button" id="btn-ingestion-auth" class="btn-subtle-auth">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                <span id="ingestion-auth-label">Sign In (Google / Phone)</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Dynamic Results Section -->
+        <section id="results-section" class="results-container">
+            <!-- Project Header Summary Card -->
+            <div class="summary-hero-card">
+                <div class="summary-meta">
+                    <div class="repo-badge-row">
+                        <h2 id="summary-repo-name" class="summary-repo-title">Microservices Architecture Suite</h2>
+                        <span id="summary-timestamp" class="summary-time">Analyzed just now</span>
+                    </div>
+                    <p class="summary-subtitle" id="summary-health-description">
+                        Aggregated analysis combining AST structural complexity and temporal Git commit churn.
+                    </p>
+                    <div class="summary-actions-row">
+                        <button type="button" id="btn-export-pdf" class="btn-report">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="12" y2="18"></line>
+                                <line x1="15" y1="15" x2="12" y2="18"></line>
+                            </svg>
+                            Export Authorized PDF Report
+                        </button>
+                        <button type="button" id="btn-share-report" class="btn-share">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            </svg>
+                            Share Audit Report
+                        </button>
+                    </div>
+                </div>
+
+                <div class="health-radial-block">
+                    <div class="gauge-wrapper">
+                        <svg class="radial-gauge" viewBox="0 0 120 120">
+                            <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+                            <circle id="gauge-progress" class="gauge-value" cx="60" cy="60" r="50"></circle>
+                        </svg>
+                        <div class="gauge-inner">
+                            <span id="gauge-percent" class="gauge-score">0%</span>
+                            <span class="gauge-label">DEBT RISK</span>
+                        </div>
+                    </div>
+                    <div class="gauge-caption">
+                        <span id="gauge-status-badge" class="status-pill status-moderate">Moderate Risk</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric Stat Grid -->
+            <div class="stat-cards-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-label">Total Files Analyzed</span>
+                        <div class="stat-icon-wrapper">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <span id="stat-total-files" class="stat-value">--</span>
+                    <span class="stat-foot" id="stat-total-loc">-- Total LOC</span>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-label">Critical Hotspots</span>
+                        <div class="stat-icon-wrapper" style="color: var(--status-critical);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <span id="stat-critical-files" class="stat-value" style="color: var(--status-critical);">--</span>
+                    <span class="stat-foot">Risk Score &ge; 80%</span>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-label">Avg Cyclomatic Complexity</span>
+                        <div class="stat-icon-wrapper">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <span id="stat-avg-complexity" class="stat-value">--</span>
+                    <span class="stat-foot">&lt; 10 is maintainable</span>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <span class="stat-label">Active ML Model</span>
+                        <div class="stat-icon-wrapper">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                <line x1="8" y1="21" x2="16" y2="21"></line>
+                                <line x1="12" y1="17" x2="12" y2="21"></line>
+                            </svg>
+                        </div>
+                    </div>
+                    <span id="stat-active-model" class="stat-value-text">Random Forest</span>
+                    <span class="stat-foot" id="stat-model-auc">ROC-AUC: --</span>
+                </div>
+            </div>
+
+            <!-- Risk Distribution Bar -->
+            <div class="distribution-card">
+                <div class="distribution-header">
+                    <span class="dist-title">Portfolio Risk Breakdown</span>
+                    <div class="dist-legend">
+                        <span class="legend-item"><span class="legend-bullet bullet-critical"></span> Critical (<span id="dist-count-critical">0</span>)</span>
+                        <span class="legend-item"><span class="legend-bullet bullet-high"></span> High (<span id="dist-count-high">0</span>)</span>
+                        <span class="legend-item"><span class="legend-bullet bullet-moderate"></span> Moderate (<span id="dist-count-moderate">0</span>)</span>
+                        <span class="legend-item"><span class="legend-bullet bullet-low"></span> Low (<span id="dist-count-low">0</span>)</span>
+                    </div>
+                </div>
+                <div class="distribution-bar-track">
+                    <div id="bar-critical" class="dist-seg seg-critical" style="width: 25%"></div>
+                    <div id="bar-high" class="dist-seg seg-high" style="width: 25%"></div>
+                    <div id="bar-moderate" class="dist-seg seg-moderate" style="width: 25%"></div>
+                    <div id="bar-low" class="dist-seg seg-low" style="width: 25%"></div>
+                </div>
+            </div>
+
+            <!-- Risk Explanation & Debt Attribution Chart Card -->
+            <div class="risk-explanation-card">
+                <div class="risk-chart-header">
+                    <div class="risk-chart-title-group">
+                        <div class="risk-chart-badge">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Explainable AI Risk Engine</span>
+                        </div>
+                        <h3 class="risk-chart-title">Risk Explanation &amp; Factor Attribution Chart</h3>
+                        <p class="risk-chart-desc">Quantifies how AST structural complexity, code churn velocity, monolithic file scale, defect history, and author dispersion influence total calculated debt risk.</p>
+                    </div>
+                    <div class="risk-chart-controls">
+                        <div class="segmented-control chart-view-switcher">
+                            <button type="button" class="segmented-item chart-tab-btn active" data-chart-view="factors">Factor Impact Weights</button>
+                            <button type="button" class="segmented-item chart-tab-btn" data-chart-view="tiers">Risk Severity Distribution</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View 1: Factor Impact Weights -->
+                <div id="chart-view-factors" class="chart-view-pane active">
+                    <div class="factor-bars-grid" id="factor-bars-container">
+                        <!-- Populated dynamically with live weights and meters -->
+                    </div>
+                    <div class="chart-formula-note">
+                        <span class="formula-icon">&fnof;(x)</span>
+                        <span class="formula-text"><strong>Debt Risk Model Formulation:</strong> Weighted ensemble combining AST Cyclomatic Complexity (35%), Git Churn Velocity (25%), Monolithic LOC (20%), Historical Bug Regression Rate (12%), and Author Dispersion Entropy (8%) calibrated via Random Forest decision boundaries.</span>
+                    </div>
+                </div>
+
+                <!-- View 2: Risk Severity Distribution Matrix -->
+                <div id="chart-view-tiers" class="chart-view-pane">
+                    <div class="tier-matrix-grid" id="tier-matrix-container">
+                        <!-- Populated dynamically with Critical, High, Moderate, Low breakdown -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategic Insights -->
+            <div class="insights-banner">
+                <div class="insights-col">
+                    <h3 class="insights-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Primary Technical Debt Drivers
+                    </h3>
+                    <ul id="top-drivers-list" class="insights-list">
+                        <li>Loading drivers...</li>
+                    </ul>
+                </div>
+                <div class="insights-col">
+                    <h3 class="insights-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        Recommended Action Priorities
+                    </h3>
+                    <ul id="global-recs-list" class="insights-list">
+                        <li>Loading recommendations...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Segmented Controls Tabs Section -->
+            <div class="tabs-container">
+                <div class="tabs-header-bar">
+                    <!-- Segmented Control -->
+                    <div class="segmented-control">
+                        <button class="segmented-item tab-btn active" data-tab="tab-files">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            File Risk Explorer
+                        </button>
+                        <button class="segmented-item tab-btn" data-tab="tab-solutions">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="16 18 22 12 16 6"></polyline>
+                                <polyline points="8 6 2 12 8 18"></polyline>
+                            </svg>
+                            Code Fix &amp; Solutions
+                        </button>
+                        <button class="segmented-item tab-btn" data-tab="tab-assistant">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                            </svg>
+                            Smart Refactoring Assistant
+                        </button>
+                        <button class="segmented-item tab-btn" data-tab="tab-treemap">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            Hotspot Matrix
+                        </button>
+                        <button class="segmented-item tab-btn" data-tab="tab-githistory">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="18" r="3"></circle>
+                                <circle cx="6" cy="6" r="3"></circle>
+                                <circle cx="18" cy="6" r="3"></circle>
+                                <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"></path>
+                                <path d="M12 12v3"></path>
+                            </svg>
+                            Git History &amp; Logs
+                        </button>
+                        <button class="segmented-item tab-btn" data-tab="tab-benchmarks">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="20" x2="18" y2="10"></line>
+                                <line x1="12" y1="20" x2="12" y2="4"></line>
+                                <line x1="6" y1="20" x2="6" y2="14"></line>
+                            </svg>
+                            ML Benchmarks
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: File Risk Table -->
+                <div id="tab-files" class="tab-pane active">
+                    <!-- Interactive File Risk & Complexity Comparison Graph -->
+                    <div class="analytics-graph-card" id="analytics-graph-card">
+                        <div class="graph-card-header">
+                            <div class="graph-title-group">
+                                <span class="graph-badge">Visual Intelligence</span>
+                                <h4 class="graph-title">File Risk &amp; Complexity Analytics Graph</h4>
+                            </div>
+                            <div class="graph-legend">
+                                <span class="graph-legend-item"><span class="legend-dot dot-critical"></span> Critical (≥80%)</span>
+                                <span class="graph-legend-item"><span class="legend-dot dot-high"></span> High (55–79%)</span>
+                                <span class="graph-legend-item"><span class="legend-dot dot-moderate"></span> Moderate (30–54%)</span>
+                                <span class="graph-legend-item"><span class="legend-dot dot-low"></span> Low (&lt;30%)</span>
+                            </div>
+                        </div>
+                        <div class="graph-chart-canvas-wrap">
+                            <div id="risk-bar-chart" class="risk-bar-chart-container">
+                                <!-- Populated dynamically with interactive bars -->
+                            </div>
+                        </div>
+                        <div class="graph-footer-hint">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span>Click any file bar to immediately inspect its Explainable AI (SHAP) attributions or auto-generate code fixes.</span>
+                        </div>
+                    </div>
+
+                    <div class="table-toolbar">
+                        <div class="search-box">
+                            <span class="search-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" id="file-search-input" placeholder="Filter files by name or path...">
+                        </div>
+
+                        <!-- Segmented Filter Controls -->
+                        <div class="segmented-control">
+                            <button class="segmented-item filter-chip active" data-risk="all">All <span class="filter-chip-count" id="chip-count-all">0</span></button>
+                            <button class="segmented-item filter-chip" data-risk="critical">Critical <span class="filter-chip-count" id="chip-count-critical">0</span></button>
+                            <button class="segmented-item filter-chip" data-risk="high">High <span class="filter-chip-count" id="chip-count-high">0</span></button>
+                            <button class="segmented-item filter-chip" data-risk="moderate">Moderate <span class="filter-chip-count" id="chip-count-moderate">0</span></button>
+                            <button class="segmented-item filter-chip" data-risk="low">Low <span class="filter-chip-count" id="chip-count-low">0</span></button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="files-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-sort="file_path">File Path &amp; Module</th>
+                                    <th>Language</th>
+                                    <th class="sortable" data-sort="loc">LOC</th>
+                                    <th class="sortable" data-sort="complexity">Complexity</th>
+                                    <th class="sortable" data-sort="code_churn">Churn</th>
+                                    <th class="sortable" data-sort="authors_count">Authors</th>
+                                    <th class="sortable" data-sort="bug_fixes_count">Bug Fixes</th>
+                                    <th class="sortable" data-sort="risk_score">Risk Score (%)</th>
+                                    <th>Explainable AI</th>
+                                    <th>Code Solution</th>
+                                </tr>
+                            </thead>
+                            <tbody id="files-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Code Fix & Solutions Tab -->
+                <div id="tab-solutions" class="tab-pane">
+                    <div class="solutions-container">
+                        <div class="solutions-header-bar">
+                            <div class="solutions-header-left">
+                                <h3>RefactAI Code Fix &amp; Commented Solutions</h3>
+                                <p>Select an analyzed file to inspect the detected anti-patterns and view production-ready refactored solutions with exhaustive comment rationale.</p>
+                            </div>
+                            <div class="solutions-file-selector">
+                                <label for="solution-file-select" class="input-label">Select Target File:</label>
+                                <select id="solution-file-select" class="solution-dropdown">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="solution-details-card" id="solution-details-view">
+                            <div class="solution-meta-row">
+                                <div class="solution-meta-left">
+                                    <h4 id="solution-file-title">src/services/payment_orchestrator.py</h4>
+                                    <span class="lang-pill" id="solution-lang-pill">Python</span>
+                                </div>
+                                <div class="solution-meta-actions">
+                                    <button type="button" class="btn-copy-code" id="btn-copy-solution">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                        <span id="copy-solution-text">Copy Commented Solution</span>
+                                    </button>
+                                    <button type="button" class="btn-download-code" id="btn-download-solution">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                        Download Fixed Code
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="solution-problem-alert">
+                                <div class="solution-alert-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                    </svg>
+                                </div>
+                                <div class="solution-alert-content">
+                                    <strong>Detected Architectural Issues:</strong>
+                                    <p id="solution-problem-desc">Loading issue diagnostics...</p>
+                                </div>
+                            </div>
+
+                            <!-- Before vs After View Switcher -->
+                            <div class="code-view-tabs">
+                                <button type="button" class="code-view-btn active" data-view="solution">Refactored Solution (Comment Form)</button>
+                                <button type="button" class="code-view-btn" data-view="before">Original Problematic Code (Before)</button>
+                            </div>
+
+                            <div class="code-editor-box">
+                                <pre class="code-pre"><code id="solution-code-block" class="code-content"></code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Smart Refactoring Assistant -->
+                <div id="tab-assistant" class="tab-pane">
+                    <div class="assistant-container">
+                        <div class="assistant-banner">
+                            <div class="assistant-banner-left">
+                                <div class="assistant-status-pill">
+                                    <span class="pulse-dot"></span>
+                                    <span>AI Engine Active</span>
+                                </div>
+                                <h3>RefactAI Smart Refactoring Assistant</h3>
+                                <p>Autonomous AI copilot that analyzes high-debt files, applies structural design patterns (Strategy, Guard Clauses, Dependency Injection), and outputs production-ready zero-debt code.</p>
+                            </div>
+                            <div class="assistant-file-picker">
+                                <label for="assistant-file-select" class="input-label">Target File to Refactor:</label>
+                                <select id="assistant-file-select" class="solution-dropdown">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Quick Action Refactoring Prompts -->
+                        <div class="assistant-actions-panel">
+                            <span class="panel-tag">Quick Remediation Actions:</span>
+                            <div class="quick-prompts-grid">
+                                <button type="button" class="quick-prompt-btn active" data-action="hotspot">
+                                    <span class="prompt-icon">⚡</span>
+                                    <span class="prompt-text">
+                                        <strong>Auto-Refactor Hotspot</strong>
+                                        <small>Strategy pattern &amp; method decomposition</small>
+                                    </span>
+                                </button>
+                                <button type="button" class="quick-prompt-btn" data-action="guard-clauses">
+                                    <span class="prompt-icon">🛡️</span>
+                                    <span class="prompt-text">
+                                        <strong>Guard Clauses &amp; Flattening</strong>
+                                        <small>Eliminates nested conditional ladders</small>
+                                    </span>
+                                </button>
+                                <button type="button" class="quick-prompt-btn" data-action="extract-service">
+                                    <span class="prompt-icon">🧩</span>
+                                    <span class="prompt-text">
+                                        <strong>Extract Micro-Services</strong>
+                                        <small>Deconstructs God Classes into modules</small>
+                                    </span>
+                                </button>
+                                <button type="button" class="quick-prompt-btn" data-action="test-harness">
+                                    <span class="prompt-icon">🧪</span>
+                                    <span class="prompt-text">
+                                        <strong>Unit Test Safety Harness</strong>
+                                        <small>Regression tests prior to refactoring</small>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Assistant Query Bar -->
+                        <div class="assistant-query-box">
+                            <div class="query-input-wrap">
+                                <span class="ai-spark-icon">✨</span>
+                                <input type="text" id="assistant-custom-query" placeholder="Ask RefactAi Assistant... (e.g. 'How do I decompose this class to remove tight coupling?')">
+                                <button type="button" id="btn-submit-assistant" class="btn-assistant-ask">
+                                    Refactor with AI
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Assistant Output Card -->
+                        <div class="assistant-result-card" id="assistant-result-view">
+                            <!-- Metrics Forecast Header -->
+                            <div class="remediation-forecast-row">
+                                <div class="forecast-item">
+                                    <span class="forecast-label">Current Complexity</span>
+                                    <span class="forecast-val current" id="forecast-curr-comp">--</span>
+                                </div>
+                                <div class="forecast-arrow">&rarr;</div>
+                                <div class="forecast-item">
+                                    <span class="forecast-label">Projected Complexity</span>
+                                    <span class="forecast-val projected" id="forecast-proj-comp">--</span>
+                                </div>
+                                <div class="forecast-divider"></div>
+                                <div class="forecast-item">
+                                    <span class="forecast-label">Projected Debt Drop</span>
+                                    <span class="forecast-val badge-drop" id="forecast-debt-drop">--%</span>
+                                </div>
+                                <div class="forecast-divider"></div>
+                                <div class="forecast-item">
+                                    <span class="forecast-label">Architecture Status</span>
+                                    <span class="status-pill status-low" id="forecast-status">Certified Refactor</span>
+                                </div>
+                            </div>
+
+                            <!-- Diagnosis Summary -->
+                            <div class="assistant-diagnosis-box">
+                                <div class="diag-header">
+                                    <span class="diag-title">Architectural Diagnosis &amp; Rationale</span>
+                                </div>
+                                <p id="assistant-diag-text" class="diag-content">Select a file and prompt to generate automated refactoring diagnosis.</p>
+                            </div>
+
+                            <!-- Code Transformation Area -->
+                            <div class="assistant-code-wrapper">
+                                <div class="assistant-code-toolbar">
+                                    <div class="assistant-code-views">
+                                        <button type="button" class="asst-view-btn active" data-asst-view="refactored">Refactored Solution (Production Ready)</button>
+                                        <button type="button" class="asst-view-btn" data-asst-view="original">Original Hotspot Code (Before)</button>
+                                        <button type="button" class="asst-view-btn" data-asst-view="steps">Refactoring Checklist</button>
+                                    </div>
+                                    <div class="assistant-code-actions">
+                                        <button type="button" class="btn-copy-code" id="btn-copy-assistant-code">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                            </svg>
+                                            <span id="copy-asst-text">Copy Code</span>
+                                        </button>
+                                        <button type="button" class="btn-download-code" id="btn-download-assistant-code">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                            </svg>
+                                            Download Fixed File
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="code-editor-box">
+                                    <pre class="code-pre"><code id="assistant-code-display" class="code-content"></code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Visual Hotspot Treemap -->
+                <div id="tab-treemap" class="tab-pane">
+                    <div class="treemap-caption">
+                        <p>Visual Hotspot Grid: Color indicates <strong>Technical Debt Risk</strong> and metrics show <strong>LOC</strong>, <strong>Complexity</strong>, and <strong>Author Entropy</strong>.</p>
+                    </div>
+                    <div id="hotspot-grid" class="hotspot-matrix-grid">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 4: ML Model Benchmarks -->
+                <div id="tab-benchmarks" class="tab-pane">
+                    <div class="benchmark-intro">
+                        <h3>Machine Learning Algorithm Performance Comparison</h3>
+                        <p>RefactAI evaluates 4 algorithmic paradigms over software defect datasets. Switch models using the selector above to re-evaluate risk scores and SHAP explainability.</p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table benchmark-table">
+                            <thead>
+                                <tr>
+                                    <th>Model Name</th>
+                                    <th>Status</th>
+                                    <th>Accuracy</th>
+                                    <th>Precision</th>
+                                    <th>Recall</th>
+                                    <th>F1-Score</th>
+                                    <th>ROC-AUC</th>
+                                    <th>MAE</th>
+                                    <th>RMSE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="benchmarks-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Git Evolution History & Commits (Supabase-backed) -->
+                <div id="tab-githistory" class="tab-pane">
+                    <div class="git-history-container">
+                        <div class="git-history-header-bar">
+                            <div class="git-history-title-block">
+                                <div class="modal-supa-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                                    <span>Supabase git_history_logs Sync</span>
+                                </div>
+                                <h3>Mined Git Commit History &amp; Temporal Churn</h3>
+                                <p>Examines recent commit records, author distributions, and bug repair patches mined directly from the repository git log.</p>
+                            </div>
+                            <div class="git-history-stats-pills">
+                                <span class="git-stat-pill"><strong id="git-total-commits">0</strong> Commits Mined</span>
+                                <span class="git-stat-pill"><strong id="git-bug-fixes-count">0</strong> Bug Repairs</span>
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table" id="git-history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Commit</th>
+                                        <th>Author</th>
+                                        <th>Date</th>
+                                        <th>Commit Message</th>
+                                        <th>Code Churn</th>
+                                        <th>Classification</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="git-history-tbody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Slide-over Drawer for File Detail & SHAP Explainability -->
+    <div id="shap-drawer" class="drawer-overlay hidden">
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <div class="drawer-header-left">
+                    <span class="drawer-tag">EXPLAINABLE AI (SHAP)</span>
+                    <h3 id="drawer-file-name" class="drawer-title">file_name.py</h3>
+                    <span id="drawer-file-path" class="drawer-path">src/path/to/file.py</span>
+                </div>
+                <button id="close-drawer-btn" class="drawer-close" aria-label="Close drawer">&times;</button>
+            </div>
+
+            <div class="drawer-body">
+                <!-- Risk Gauge & Core Stats -->
+                <div class="drawer-risk-card">
+                    <div class="drawer-risk-main">
+                        <span class="drawer-risk-label">Technical Debt Risk Score</span>
+                        <div class="drawer-risk-value-row">
+                            <span id="drawer-risk-score" class="drawer-score" style="color: var(--status-critical);">84.5%</span>
+                            <span id="drawer-risk-badge" class="status-pill status-critical">Critical Risk</span>
+                        </div>
+                    </div>
+                    <div class="drawer-mini-metrics">
+                        <div class="mini-stat">
+                            <span class="mini-label">LOC</span>
+                            <span id="drawer-loc" class="mini-val">780</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-label">Complexity</span>
+                            <span id="drawer-complexity" class="mini-val">28.5</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-label">Contributors</span>
+                            <span id="drawer-authors" class="mini-val">6</span>
+                        </div>
+                        <div class="mini-stat">
+                            <span class="mini-label">Bug Repairs</span>
+                            <span id="drawer-bugs" class="mini-val">7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Automated Solution Quick Jump Card -->
+                <div class="drawer-solution-box">
+                    <div class="drawer-solution-box-header">
+                        <h4>RefactAI Code Fix &amp; Solution</h4>
+                        <span class="solution-status-tag">Commented Fix Available</span>
+                    </div>
+                    <p id="drawer-problem-preview" class="drawer-problem-text">Identifies high cyclomatic complexity and monolithic logic flow.</p>
+                    <button type="button" id="drawer-open-solution-btn" class="btn-primary" style="width: 100%; margin-top: 0.5rem; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        View Full Commented Code Solution
+                    </button>
+                </div>
+
+                <!-- SHAP Feature Importance Section -->
+                <div class="shap-section">
+                    <div class="shap-header">
+                        <h4>SHAP Feature Attributions</h4>
+                        <span class="shap-caption">Why did RefactAI assign this risk score?</span>
+                    </div>
+                    <div class="shap-legend">
+                        <span class="shap-legend-item"><span class="shap-color-red"></span> Increases Debt Risk</span>
+                        <span class="shap-legend-item"><span class="shap-color-green"></span> Decreases Debt Risk</span>
+                    </div>
+
+                    <div id="shap-bars-container" class="shap-bars-list">
+                        <!-- Populated dynamically with SHAP waterfall bars -->
+                    </div>
+                </div>
+
+                <!-- Refactoring Guidance Checklist -->
+                <div class="recommendations-section">
+                    <h4>Targeted Refactoring Recommendations</h4>
+                    <ul id="drawer-recs-list" class="recs-list">
+                        <!-- Populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inquiry & Audit Request Modal (Supabase Backend) -->
+    <div id="inquiry-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-header-info">
+                    <div class="modal-supa-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        <span>Supabase Backend Sync</span>
+                    </div>
+                    <h3 class="modal-title">Submit Codebase Audit Inquiry</h3>
+                    <p class="modal-desc">Connect with the RefactAI team for enterprise repository audits, automated CI/CD debt gates, or custom model training.</p>
+                </div>
+                <button type="button" id="close-inquiry-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+
+            <form id="inquiry-form" class="inquiry-form">
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="inquiry-name" class="form-label">Full Name <span class="required-star">*</span></label>
+                        <input type="text" id="inquiry-name" class="form-input" placeholder="e.g. Jane Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="inquiry-email" class="form-label">Work Email <span class="required-star">*</span></label>
+                        <input type="email" id="inquiry-email" class="form-input" placeholder="jane@company.com" required>
+                    </div>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="inquiry-org" class="form-label">Company / Team</label>
+                        <input type="text" id="inquiry-org" class="form-input" placeholder="e.g. Stripe, Airbnb, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="inquiry-type" class="form-label">Inquiry Focus</label>
+                        <div class="select-wrapper">
+                            <select id="inquiry-type" class="form-select">
+                                <option value="Enterprise Debt Audit" selected>Enterprise Debt Audit</option>
+                                <option value="Smart Refactoring Integration">Smart Refactoring Integration</option>
+                                <option value="Continuous Quality Gate (CI/CD)">Continuous Quality Gate (CI/CD)</option>
+                                <option value="Custom ML Retraining">Custom ML Retraining</option>
+                                <option value="General Consultation">General Consultation</option>
+                            </select>
+                            <span class="select-arrow">&#9662;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="inquiry-repo" class="form-label">Repository Target (Optional)</label>
+                    <input type="url" id="inquiry-repo" class="form-input" placeholder="https://github.com/organization/repo">
+                </div>
+
+                <div class="form-group">
+                    <label for="inquiry-message" class="form-label">Project Details / Message <span class="required-star">*</span></label>
+                    <textarea id="inquiry-message" class="form-textarea" rows="4" placeholder="Tell us about your codebase size, primary languages, technical debt pain points, or timeline..." required></textarea>
+                </div>
+
+                <div class="modal-form-actions">
+                    <div class="form-status-msg" id="inquiry-feedback-msg"></div>
+                    <div class="form-btn-group">
+                        <button type="button" id="cancel-inquiry-modal" class="btn-ghost">Cancel</button>
+                        <button type="submit" id="btn-submit-inquiry" class="btn-primary">
+                            <span class="btn-text">Submit Inquiry</span>
+                            <span class="btn-spinner hidden" id="inquiry-spinner"></span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RefactAI Authentication Modal (Email/Password, Google OAuth, Phone OTP, Registration, Forgot Password) -->
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div class="modal-card auth-modal-card">
+            <div class="modal-header">
+                <div class="modal-header-info">
+                    <div class="modal-supa-badge">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span>Supabase Secure Authentication</span>
+                    </div>
+                    <h3 class="modal-title" id="auth-modal-title">Sign In to RefactAI</h3>
+                    <p class="modal-desc" id="auth-modal-desc">Access repository debt audits, export compliance-ready PDF reports, and view code solutions.</p>
+                </div>
+                <button type="button" id="close-auth-modal" class="modal-close-btn" aria-label="Close modal">&times;</button>
+            </div>
+
+            <!-- Context Banner (Appears when triggered by Download PDF or Analyze guard) -->
+            <div id="auth-context-banner" class="auth-context-banner hidden">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span id="auth-context-text">Please sign in to download your official PDF report. Your analysis is preserved!</span>
+            </div>
+
+            <!-- Mode 1: Sign In (Email / Password) -->
+            <div id="auth-view-login" class="auth-view">
+                <form id="form-login" class="auth-form-body">
+                    <div class="form-group">
+                        <label for="login-email" class="form-label">Email Address *</label>
+                        <input type="email" id="login-email" class="form-input" placeholder="name@company.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <div class="label-row-split">
+                            <label for="login-password" class="form-label">Password *</label>
+                            <button type="button" id="link-to-forgot" class="link-subtle">Forgot Password?</button>
+                        </div>
+                        <div class="input-with-icon">
+                            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+                            <button type="button" class="btn-toggle-pwd" data-target="login-password" title="Toggle visibility">👁</button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-submit-login" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        <span class="btn-text">Sign In</span>
+                        <span class="btn-spinner hidden" id="login-spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>or continue with</span>
+                </div>
+
+                <div class="social-auth-grid">
+                    <button type="button" id="btn-google-login" class="btn-google-action">
+                        <svg width="18" height="18" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                        </svg>
+                        <span>Google</span>
+                    </button>
+                    <button type="button" id="btn-switch-phone-login" class="btn-phone-action">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        <span>Phone OTP</span>
+                    </button>
+                </div>
+
+                <div class="auth-switch-footer">
+                    <span>Don't have an account?</span>
+                    <button type="button" id="link-to-register" class="link-bold">Create an account</button>
+                </div>
+            </div>
+
+            <!-- Mode 2: Sign Up (Registration) -->
+            <div id="auth-view-register" class="auth-view hidden">
+                <form id="form-register" class="auth-form-body">
+                    <div class="form-group">
+                        <label for="reg-name" class="form-label">Full Name *</label>
+                        <input type="text" id="reg-name" class="form-input" placeholder="Jane Doe" required autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-email" class="form-label">Work or Personal Email *</label>
+                        <input type="email" id="reg-email" class="form-input" placeholder="jane@company.com" required autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password" class="form-label">Password (min 6 characters) *</label>
+                        <div class="input-with-icon">
+                            <input type="password" id="reg-password" class="form-input" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+                            <button type="button" class="btn-toggle-pwd" data-target="reg-password" title="Toggle visibility">👁</button>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-submit-register" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        <span class="btn-text">Create Free Account</span>
+                        <span class="btn-spinner hidden" id="register-spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>or sign up with</span>
+                </div>
+
+                <button type="button" id="btn-google-register" class="btn-google-action">
+                    <svg width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
+                        <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/>
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                    </svg>
+                    <span>Sign up with Google</span>
+                </button>
+
+                <div class="auth-switch-footer">
+                    <span>Already have an account?</span>
+                    <button type="button" id="link-to-login" class="link-bold">Sign In</button>
+                </div>
+            </div>
+
+            <!-- Mode 3: Forgot Password -->
+            <div id="auth-view-forgot" class="auth-view hidden">
+                <form id="form-forgot" class="auth-form-body">
+                    <p class="auth-sub-desc">Enter your email address and we will send you secure recovery instructions to reset your password.</p>
+                    <div class="form-group">
+                        <label for="forgot-email" class="form-label">Email Address *</label>
+                        <input type="email" id="forgot-email" class="form-input" placeholder="name@company.com" required autocomplete="email">
+                    </div>
+                    <button type="submit" id="btn-submit-forgot" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        <span class="btn-text">Send Password Reset Link</span>
+                        <span class="btn-spinner hidden" id="forgot-spinner"></span>
+                    </button>
+                </form>
+
+                <div class="auth-switch-footer">
+                    <button type="button" id="link-forgot-to-login" class="link-bold">&larr; Back to Sign In</button>
+                </div>
+            </div>
+
+            <!-- Mode 4: Phone OTP -->
+            <div id="auth-view-phone" class="auth-view hidden">
+                <div class="phone-auth-container" style="padding: 1.25rem 1.75rem;">
+                    <div id="phone-step-1">
+                        <div class="form-group">
+                            <label for="auth-phone-input" class="form-label">Phone Number (with country code) *</label>
+                            <input type="tel" id="auth-phone-input" class="form-input" placeholder="+1 555 123 4567 or +91 98765 43210">
+                            <span class="field-hint">e.g. +1 for US, +91 for India, +44 for UK</span>
+                        </div>
+                        <button type="button" id="btn-send-otp" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 0.75rem;">
+                            <span class="btn-text">Send Verification SMS</span>
+                            <span class="btn-spinner hidden" id="otp-send-spinner"></span>
+                        </button>
+                    </div>
+
+                    <div id="phone-step-2" class="hidden">
+                        <div class="form-group">
+                            <label for="auth-otp-input" class="form-label">6-Digit Verification Code *</label>
+                            <input type="text" id="auth-otp-input" class="form-input otp-input" placeholder="123456" maxlength="6">
+                            <span class="field-hint" id="otp-sent-to-label">Code sent to your phone.</span>
+                        </div>
+                        <div class="btn-row-flex" style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                            <button type="button" id="btn-back-phone" class="btn-ghost">Back</button>
+                            <button type="button" id="btn-verify-otp" class="btn-primary" style="flex: 1; justify-content: center;">
+                                <span class="btn-text">Verify &amp; Sign In</span>
+                                <span class="btn-spinner hidden" id="otp-verify-spinner"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="auth-switch-footer">
+                    <button type="button" id="link-phone-to-login" class="link-bold">&larr; Back to Email Sign In</button>
+                </div>
+            </div>
+
+            <div class="auth-footer-status">
+                <div id="auth-status-msg" class="form-status-msg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unique RefactAi Minimalist Footer -->
+    <footer class="app-footer-unique">
+        <div class="footer-unique-container">
+            <div class="unique-brand-display">
+                <div class="unique-brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                            <linearGradient id="uniqueBrandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#0055FF"/>
+                                <stop offset="50%" stop-color="#00D2FF"/>
+                                <stop offset="100%" stop-color="#A855F7"/>
+                            </linearGradient>
+                        </defs>
+                        <polygon points="12 2 2 7 12 12 22 7 12 2" stroke="url(#uniqueBrandGrad)" stroke-width="2.2" fill="rgba(0, 85, 255, 0.12)"></polygon>
+                        <polyline points="2 17 12 22 22 17" stroke="url(#uniqueBrandGrad)" stroke-width="2.2"></polyline>
+                        <polyline points="2 12 12 17 22 12" stroke="url(#uniqueBrandGrad)" stroke-width="2.2"></polyline>
+                    </svg>
+                </div>
+                <div class="unique-brand-name">
+                    Refact<span class="unique-ai-glow">Ai</span>
+                </div>
+            </div>
+            <div class="unique-footer-tagline">
+                Autonomous Technical Debt Intelligence &bull; Machine Learning &bull; Explainable AI
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Script -->
+    <script src="/static/js/app.js?v=2.8"></script>
+</body>
+</html>
